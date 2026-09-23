@@ -111,6 +111,15 @@ function vinfo(v){
 }
 // LIVE = kết nối Supabase (live.js gán khi đăng nhập); null = chế độ demo dữ liệu mẫu trong trình duyệt.
 let LIVE = null;
+// Phân quyền theo module: none | view | edit. Demo = toàn quyền.
+const PERM_MODS = [['sales','Kinh doanh','Pipeline khách hàng, cơ hội, hồ sơ khách'],['projects','Dự án','Hồ sơ dự án, thiết lập thi công'],['pm','Quản lý dự án','Tiến độ Gantt, nhiệm vụ & điểm thưởng'],['att','Chấm công','Chấm công, duyệt ngoài vùng'],['fin','Tài chính','Ngân sách, hoá đơn, công nợ, dòng tiền'],['qs','QS','Bóc tách, báo giá, mua hàng'],['wiki','Wiki','Sổ tay, nội quy, quy trình'],['apps','Ứng dụng','QS Pro & các link web nhúng']];
+const perm = mod => LIVE && LIVE.perm ? LIVE.perm(mod) : 'edit';
+function canSee(v){
+  if (v === 'dash' || v === 'chat') return true;
+  if (v === 'admin') return !!(LIVE && LIVE.isAdmin);
+  if (isApp(v)) return perm('apps') !== 'none';
+  return !PERM_MODS.some(m => m[0] === v) || perm(v) !== 'none';
+}
 const MOD = {}, AFTER = {}, ACT = {}, FORM = {}, INP = {}, CHG = {}, DROP = {}, DEL = {};
 const SEEDS = [], SEARCH = [], AI = [], AI_CHIPS = [], AI_SUGG = [];
 
@@ -239,14 +248,15 @@ function renderRail(){
   let html = `<div class="logo" title="Dezon Workspace"><img src="/img/logo.png" alt="Dezon" width="40" height="40"></div>`;
   let grp = '';
   Object.entries(VIEWS).forEach(([k, v]) => {
+    if (!canSee(k)) return;
     if (v.group !== grp){ grp = v.group; html += `<div class="rail-label">${grp}</div>`; }
     const badge = k === 'chat' && typeof chatUnreadTotal === 'function' && chatUnreadTotal() ? '<span class="badge"></span>'
       : k === 'att' && typeof attPending === 'function' && attPending().length ? '<span class="badge"></span>' : '';
     html += `<button class="rail-btn ${S.view === k ? 'on' : ''}" data-act="nav" data-v="${k}" title="${v.label}" aria-label="${v.label}">${ic(v.icon, 19)}${badge}</button>`;
   });
-  html += `<div class="rail-label">Ứng dụng</div>`;
-  S.apps.forEach(a => { const v = 'app-' + a.id; html += `<button class="rail-btn app ${S.view === v ? 'on' : ''}" data-act="nav" data-v="${v}" title="${esc(a.name)} — ${esc(a.desc || a.url)}" aria-label="${esc(a.name)}" style="--c:${cv(a.c)};--t:${ct(a.c)}">${ic(a.icon, 19)}</button>`; });
-  html += `<button class="rail-btn extra" data-act="app-new" title="Thêm ứng dụng web" aria-label="Thêm ứng dụng web">${ic('plus', 19)}</button>`;
+  if (perm('apps') !== 'none') html += `<div class="rail-label">Ứng dụng</div>`;
+  if (perm('apps') !== 'none') S.apps.forEach(a => { const v = 'app-' + a.id; html += `<button class="rail-btn app ${S.view === v ? 'on' : ''}" data-act="nav" data-v="${v}" title="${esc(a.name)} — ${esc(a.desc || a.url)}" aria-label="${esc(a.name)}" style="--c:${cv(a.c)};--t:${ct(a.c)}">${ic(a.icon, 19)}</button>`; });
+  if (perm('apps') === 'edit') html += `<button class="rail-btn extra" data-act="app-new" title="Thêm ứng dụng web" aria-label="Thêm ứng dụng web">${ic('plus', 19)}</button>`;
   html += `<div class="rail-label extra">Cài đặt</div>
     <button class="rail-btn extra" data-act="palette" title="Tìm nhanh (Ctrl K)" aria-label="Tìm nhanh">${ic('search', 19)}</button>
     <button class="rail-btn extra" data-act="theme" title="Đổi giao diện sáng / tối" aria-label="Đổi giao diện sáng tối">${ic('moon', 19)}</button>
@@ -256,7 +266,7 @@ function renderRail(){
   $('#rail').innerHTML = html;
 }
 function renderTabs(){
-  $('#tabs').innerHTML = S.tabs.filter(vinfo).map(v => `
+  $('#tabs').innerHTML = S.tabs.filter(v => vinfo(v) && canSee(v)).map(v => `
     <div class="tab ${S.view === v ? 'on' : ''}">
       <button data-act="nav" data-v="${v}">${ic(vinfo(v).icon, 14)}${esc(vinfo(v).label)}</button>
       ${S.tabs.length > 1 ? `<button class="x" data-act="tab-close" data-v="${v}" aria-label="Đóng tab ${esc(vinfo(v).label)}">${ic('x', 12)}</button>` : ''}
@@ -281,12 +291,14 @@ function renderTop(){
     </div>`;
 }
 function render(){
-  if (!vinfo(S.view) || (!isApp(S.view) && !MOD[S.view])) S.view = 'dash';
+  if (!vinfo(S.view) || !canSee(S.view) || (!isApp(S.view) && !MOD[S.view])) S.view = 'dash';
   renderTop();
   showApps();
   if (isApp(S.view)){ renderRail(); renderTabs(); save(); return; }
   const ae = document.activeElement, keep = ae && ae.id && /^(INPUT|TEXTAREA)$/.test(ae.tagName) && $('#view').contains(ae) ? {id:ae.id, v:ae.value, a:ae.selectionStart, b:ae.selectionEnd} : null;
-  try { $('#view').innerHTML = MOD[S.view](); }
+  const ro = LIVE && PERM_MODS.some(m => m[0] === S.view) && perm(S.view) === 'view'
+    ? `<div class="ro-banner">${ic('info', 15)}<span><b>Chỉ xem</b> — bạn được xem ${esc(VIEWS[S.view].label)} nhưng chưa có quyền sửa. Thay đổi sẽ không được lưu. Cần sửa? Liên hệ quản trị viên.</span></div>` : '';
+  try { $('#view').innerHTML = ro + MOD[S.view](); }
   catch (e){ console.error(e); $('#view').innerHTML = `<div class="card pad empty">Không hiển thị được trang này (${esc(e.message)}). <button class="btn sm" data-act="nav" data-v="dash">Về Tổng quan</button></div>`; }
   if (keep){ const el = document.getElementById(keep.id); if (el){ el.value = keep.v; el.focus(); try { el.setSelectionRange(keep.a, keep.b); } catch (e) {} } }
   renderRail(); renderTabs(); renderTop();
@@ -294,6 +306,7 @@ function render(){
   save();
 }
 function nav(v, subKey){
+  if (!canSee(v)){ toast('Bạn chưa được cấp quyền dùng mục này'); return; }
   if (subKey) S.sub[v] = subKey;
   S.view = v; if (!S.tabs.includes(v)) S.tabs.push(v);
   ui.notif = false; $('#main').scrollTop = 0;
@@ -322,8 +335,8 @@ function openPalette(){
 }
 function palSearch(q){
   const s = q.trim().toLowerCase(), hit = x => !s || String(x).toLowerCase().includes(s);
-  let items = Object.entries(VIEWS).filter(([, o]) => hit(o.label)).map(([v, o]) => ({icon:o.icon, label:'Mở ' + o.label, sub:'Trang', run:() => nav(v)}))
-    .concat(S.apps.filter(a => hit(a.name + ' ' + a.url)).map(a => ({icon:a.icon, label:'Mở ' + a.name, sub:'Ứng dụng', run:() => nav('app-' + a.id)})));
+  let items = Object.entries(VIEWS).filter(([k, o]) => canSee(k) && hit(o.label)).map(([v, o]) => ({icon:o.icon, label:'Mở ' + o.label, sub:'Trang', run:() => nav(v)}))
+    .concat(S.apps.filter(a => perm('apps') !== 'none' && hit(a.name + ' ' + a.url)).map(a => ({icon:a.icon, label:'Mở ' + a.name, sub:'Ứng dụng', run:() => nav('app-' + a.id)})));
   if (s) SEARCH.forEach(f => items = items.concat(f(hit)));
   ui.palItems = items.slice(0, 14);
   $('#palList').innerHTML = ui.palItems.map((it, i) => `<button class="pal-item ${i === 0 ? 'first' : ''}" data-act="pal" data-i="${i}">${ic(it.icon, 16)}<span>${esc(it.label)}</span><small>${esc(it.sub)}</small></button>`).join('') || '<div class="empty">Không tìm thấy kết quả</div>';

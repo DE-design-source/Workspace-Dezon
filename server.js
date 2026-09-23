@@ -74,6 +74,11 @@ async function adminApi(req, res, action){
     const id = r.body.id || (r.body.user && r.body.user.id);
     const patch = {name: b.name || email.split('@')[0], title: b.title || '', team: b.team || ''};
     if (b.is_admin) patch.is_admin = true;
+    if (typeof b.role === 'string' && /^[a-z]{2,20}$/.test(b.role)) patch.role = b.role;
+    if (b.perms && typeof b.perms === 'object'){
+      const ok = ['sales','projects','pm','att','fin','qs','wiki','apps'], lv = ['none','view','edit'];
+      patch.perms = Object.fromEntries(Object.entries(b.perms).filter(([k, v]) => ok.includes(k) && lv.includes(v)));
+    }
     if (id) await sb(`/rest/v1/profiles?id=eq.${id}`, {method: 'PATCH', body: JSON.stringify(patch)});
     return send(res, 200, {ok: true, id});
   }

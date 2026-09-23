@@ -43,7 +43,8 @@ $$;
 create or replace function public.guard_profile() returns trigger
 language plpgsql security definer set search_path = public as $$
 begin
-  if coalesce(auth.role(), '') <> 'service_role' and not public.is_admin() then
+  -- Chỉ chặn người dùng đăng nhập từ app (có auth.uid) mà không phải quản trị; SQL Editor / service key không bị chặn.
+  if auth.uid() is not null and coalesce(auth.role(), '') <> 'service_role' and not public.is_admin() then
     new.is_admin := old.is_admin;
     new.active   := old.active;
     new.email    := old.email;

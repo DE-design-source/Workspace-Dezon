@@ -17,8 +17,62 @@ const SYNC = [
   ['qs_settings', 'single', () => ({vat:S.qs.vat}), v => S.qs.vat = v.vat],
   ['wiki_pages', 'array', () => S.wiki.pages, v => S.wiki.pages = v],
   ['wiki_cats', 'single', () => ({cats:S.wiki.cats}), v => S.wiki.cats = v.cats],
-  ['activity', 'single', () => ({list:S.activity}), v => S.activity = v.list || []]
+  ['activity', 'single', () => ({list:S.activity}), v => S.activity = v.list || []],
+  ['apps', 'single', () => ({list:S.apps}), v => S.apps = v.list || []]
 ];
+// Mẫu vai trò: áp nhanh rồi chỉnh riêng từng module.
+const ROLES = {
+  admin:{label:'Quản trị viên', admin:true},
+  director:{label:'Ban giám đốc', perms:{sales:'edit', projects:'edit', pm:'edit', att:'edit', fin:'edit', qs:'edit', wiki:'edit', apps:'edit'}},
+  pm:{label:'Quản lý dự án', perms:{sales:'view', projects:'edit', pm:'edit', att:'edit', fin:'view', qs:'edit', wiki:'edit', apps:'view'}},
+  sales:{label:'Kinh doanh', perms:{sales:'edit', projects:'view', pm:'view', att:'none', fin:'none', qs:'view', wiki:'view', apps:'view'}},
+  accountant:{label:'Kế toán', perms:{sales:'view', projects:'view', pm:'view', att:'view', fin:'edit', qs:'view', wiki:'view', apps:'none'}},
+  qs:{label:'QS / Dự toán', perms:{sales:'view', projects:'view', pm:'view', att:'none', fin:'none', qs:'edit', wiki:'view', apps:'view'}},
+  site:{label:'Kỹ thuật / Công trường', perms:{sales:'none', projects:'view', pm:'edit', att:'edit', fin:'none', qs:'view', wiki:'view', apps:'view'}},
+  hr:{label:'Nhân sự', perms:{sales:'none', projects:'view', pm:'view', att:'edit', fin:'none', qs:'none', wiki:'edit', apps:'none'}},
+  staff:{label:'Nhân viên', perms:{sales:'none', projects:'none', pm:'view', att:'none', fin:'none', qs:'none', wiki:'view', apps:'view'}},
+  custom:{label:'Tuỳ chỉnh'}
+};
+const LEVELS = [['none','Không'],['view','Xem'],['edit','Sửa']];
+// Giống hàm can_read_record / can_write_record trong migration-002 (máy chủ mới là nơi chặn thật).
+function colRead(col, P){
+  if (['activity','people','wiki_cats','qs_settings','apps'].includes(col)) return true;
+  if (col === 'leads') return P('sales') !== 'none';
+  if (col === 'projects') return ['projects','pm','fin','att','qs','sales'].some(m => P(m) !== 'none');
+  if (col === 'gantt' || col === 'quest') return P('pm') !== 'none';
+  if (col === 'att') return P('att') !== 'none';
+  if (col === 'fin') return P('fin') !== 'none';
+  if (col.startsWith('qs_')) return P('qs') !== 'none';
+  if (col.startsWith('wiki_')) return P('wiki') !== 'none';
+  return false;
+}
+function colWrite(col, P){
+  const e = m => P(m) === 'edit';
+  switch (col){
+    case 'activity': return true;
+    case 'people': return e('att') || e('projects') || e('pm');
+    case 'leads': return e('sales');
+    case 'projects': return e('projects') || e('sales');
+    case 'gantt': return e('pm') || e('projects');
+    case 'quest': return e('pm');
+    case 'att': return e('att') || e('projects');
+    case 'fin': return e('fin') || e('projects');
+    case 'qs_projects': return e('qs') || e('projects');
+    case 'apps': return e('apps');
+  }
+  if (col.startsWith('qs_')) return e('qs');
+  if (col.startsWith('wiki_')) return e('wiki');
+  return false;
+}
+// Dữ liệu "trống" dùng làm nền: không để lọt dữ liệu mẫu vào workspace thật.
+function blankState(){
+  const s0 = seed();
+  Object.assign(s0, {projects:[], leads:[], people:[], gantt:{}, fin:{}, activity:[]});
+  s0.att = {sites:[], rec:[], approvals:[], week:[], mine:{p:'', site:'', in:null, out:null, task:'', weekMin:0, hist:[]}};
+  s0.qs.projects = []; s0.qs.po = [];
+  s0.quest = {...s0.quest, pid:'', player:'', streak:0, lastSafety:'', pts:{}, redeems:[], base:0, steps:s0.quest.steps.map(st => ({...st, tasks:st.tasks.map(t => ({...t, done:false, by:'', date:''}))}))};
+  return s0;
+}
 const UI_KEYS = ['view', 'tabs', 'pid', 'sub', 'ai', 'cv', 'seenAct'];
 
 // So sánh theo nội dung: Postgres (jsonb) tự sắp xếp lại thứ tự khoá nên phải chuẩn hoá trước khi so.
@@ -117,13 +171,7 @@ async function liveBoot(){
     const go = async sample => {
       shell.querySelectorAll('button').forEach(b => b.disabled = true);
       shell.querySelector('#initMsg').innerHTML = msg('Đang ghi dữ liệu…');
-      const s0 = seed();
-      if (!sample){
-        Object.assign(s0, {projects:[], leads:[], people:[], gantt:{}, fin:{}, activity:[]});
-        s0.att = {sites:[], rec:[], approvals:[], week:[], mine:{p:'', site:'', in:null, out:null, task:'', weekMin:0, hist:[]}};
-        s0.qs.projects = []; s0.qs.po = [];
-        s0.quest = {...s0.quest, pid:'', player:'', streak:0, lastSafety:'', pts:{}, redeems:[], base:0, steps:s0.quest.steps.map(st => ({...st, tasks:st.tasks.map(t => ({...t, done:false, by:'', date:''}))}))};
-      }
+      const s0 = sample ? seed() : blankState();
       const saved = S; S = s0;
       const rows = [];
       SYNC.forEach(([col, kind, get]) => Object.entries(toRecs(kind, get())).forEach(([id, data]) => rows.push({collection:col, id, data})));
@@ -148,9 +196,9 @@ async function liveBoot(){
     const me = prof.data.find(p => p.id === L.uid);
     if (!me) throw new Error('Không tìm thấy hồ sơ tài khoản');
     if (!me.active){ await sb.auth.signOut(); throw new Error('Tài khoản đã bị khoá'); }
-    L.isAdmin = me.is_admin;
+    L.isAdmin = me.is_admin; L.myPermSig = permSig(me);
     // trạng thái giao diện riêng của từng người
-    const base = seed();
+    const base = blankState();
     let uiState = {};
     try { uiState = JSON.parse(localStorage.getItem('sf-ui-' + L.uid)) || {}; } catch (e) {}
     S = {...base, convs:[], msgs:[], read:{}, cv:null};
@@ -166,6 +214,7 @@ async function liveBoot(){
       L.snap[col] = {};
       rows.forEach(r => L.snap[col][r.id] = stable(r.data));
       if (!L.hasData) return;
+      if (!colRead(col, L.perm)) return;                                         // không có quyền đọc: giữ trống
       if (kind === 'array') set(rows.map(r => r.data));                          // kể cả rỗng: không để lọt dữ liệu mẫu
       else if (kind === 'map') set(Object.fromEntries(rows.map(r => [r.id, r.data])));
       else if (rows[0]) set(rows[0].data);
@@ -173,7 +222,9 @@ async function liveBoot(){
     if (!S.projects.some(p => p.id === S.pid)) S.pid = (S.projects[0] || {}).id;
     await loadChat();
   }
-  const mapProfile = p => ({id:p.id, name:p.name || p.email, role:p.title || '', team:p.team || '', c:p.color || 'blue', email:p.email, isAdmin:p.is_admin, active:p.active, account:true});
+  const mapProfile = p => ({id:p.id, name:p.name || p.email, role:p.title || '', team:p.team || '', c:p.color || 'blue', email:p.email, isAdmin:p.is_admin, active:p.active, account:true, roleKey:p.role || 'staff', perms:p.perms || {}});
+  const permSig = p => JSON.stringify([p.is_admin, p.active, p.role, p.perms]);
+  L.perm = mod => { const me = (S.profiles || []).find(p => p.id === L.uid); if (!me) return 'none'; if (me.isAdmin) return 'edit'; return me.perms[mod] || 'none'; };
 
   /* ---------- chat ---------- */
   async function loadChat(){
@@ -268,12 +319,25 @@ async function liveBoot(){
   L.saveUi = () => { if (!L.uid) return; try { const o = {}; UI_KEYS.forEach(k => o[k] = S[k]); localStorage.setItem('sf-ui-' + L.uid, JSON.stringify(o)); } catch (e) {} };
   L.sync = () => { if (!L.ready) return; clearTimeout(L.timer); L.timer = setTimeout(flushSync, 350); };
   async function flushSync(){
-    const ups = [], dels = [];
-    SYNC.forEach(([col, kind, get]) => {
+    const ups = [], dels = [], denied = [];
+    SYNC.forEach(([col, kind, get, set]) => {
       const cur = toRecs(kind, get()), snap = L.snap[col] || (L.snap[col] = {});
+      if (!colWrite(col, L.perm)){
+        // chỉ có quyền xem: đưa dữ liệu về như trên máy chủ
+        const changed = Object.entries(cur).some(([id, d]) => snap[id] !== stable(d)) || Object.keys(snap).some(id => !(id in cur));
+        if (changed && colRead(col, L.perm)){
+          const fromSnap = id => JSON.parse(snap[id]);
+          if (kind === 'array') set(Object.keys(snap).map(fromSnap));
+          else if (kind === 'map') set(Object.fromEntries(Object.keys(snap).map(id => [id, fromSnap(id)])));
+          else if (snap._) set(fromSnap('_'));
+          denied.push(col);
+        }
+        return;
+      }
       Object.entries(cur).forEach(([id, data]) => { const j = stable(data); if (snap[id] !== j) ups.push({collection:col, id, data, j}); });
       Object.keys(snap).forEach(id => { if (!(id in cur)) dels.push({col, id}); });
     });
+    if (denied.length){ toast('Bạn chỉ có quyền xem phần này — thay đổi chưa được lưu'); render(); }
     if (!ups.length && !dels.length) return;
     ups.forEach(u => L.snap[u.collection][u.id] = u.j);
     dels.forEach(d => delete L.snap[d.col][d.id]);
@@ -337,7 +401,7 @@ async function liveBoot(){
       .on('postgres_changes', {event:'UPDATE', schema:'public', table:'conversations'}, () => refreshConvs())
       .on('postgres_changes', {event:'*', schema:'public', table:'profiles'}, async () => {
         const {data} = await sb.from('profiles').select('*').order('name');
-        if (data){ S.profiles = data.map(mapProfile); const me = data.find(p => p.id === L.uid); if (!me || !me.active){ await sb.auth.signOut(); location.reload(); return; } L.isAdmin = me.is_admin; renderSoft(); }
+        if (data){ S.profiles = data.map(mapProfile); const me = data.find(p => p.id === L.uid); if (!me || !me.active){ await sb.auth.signOut(); location.reload(); return; } if (permSig(me) !== L.myPermSig){ toast('Quyền của bạn vừa được cập nhật — đang tải lại…'); setTimeout(() => location.reload(), 1500); return; } L.isAdmin = me.is_admin; renderSoft(); }
       })
       .subscribe();
     // Quay lại tab sau thời gian dài: tải lại tin để không lỡ tin khi mất kết nối.
@@ -437,54 +501,117 @@ async function liveBoot(){
     const r = await fetch('/api/admin/' + action, {method:body ? 'POST' : 'GET', headers:{'Content-Type':'application/json', Authorization:'Bearer ' + session.access_token}, body:body ? JSON.stringify(body) : undefined});
     const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || 'Lỗi ' + r.status); return j;
   };
+  // ---- trang Tài khoản: danh sách, ma trận quyền, vai trò mẫu ----
+  const roleOf = p => p.isAdmin ? 'admin' : (ROLES[p.roleKey] ? p.roleKey : 'custom');
+  const permOf = (p, m) => p.isAdmin ? 'edit' : (p.perms[m] || 'none');
+  const LV_C = {edit:'green', view:'blue', none:'gray'};
+  const lvCell = lv => `<span class="lv lv-${lv}" title="${{edit:'Được sửa', view:'Chỉ xem', none:'Không truy cập'}[lv]}">${{edit:'Sửa', view:'Xem', none:'—'}[lv]}</span>`;
+  function permGrid(perms, roleKey){
+    const isAdm = roleKey === 'admin';
+    return `<div class="field">Vai trò (mẫu quyền)<select id="pg-role" name="role" data-change="adm-role">${opt(Object.entries(ROLES).map(([k, r]) => [k, r.label]), roleKey)}</select></div>
+      <div class="perm-grid ${isAdm ? 'is-admin' : ''}" id="permGrid">
+        <div class="pg-note">${isAdm ? 'Quản trị viên có toàn quyền mọi module, được mời / khoá / xoá tài khoản và phân quyền.' : 'Tổng quan và Chat luôn có. Chọn mức cho từng module:'}</div>
+        ${PERM_MODS.map(([k, label, desc]) => `<div class="pg-row"><div><b>${label}</b><small>${desc}</small></div>
+          <div class="lv-seg">${LEVELS.map(([lv, l]) => `<label><input type="radio" name="p_${k}" value="${lv}" data-change="adm-lv" ${(isAdm ? 'edit' : (perms[k] || 'none')) === lv ? 'checked' : ''} ${isAdm ? 'disabled' : ''}><span class="lv-${lv}">${l}</span></label>`).join('')}</div></div>`).join('')}
+      </div>`;
+  }
+  const readGrid = v => Object.fromEntries(PERM_MODS.map(([k]) => [k, v['p_' + k] || 'none']));
+  CHG['adm-role'] = el => {
+    const f = el.closest('form'), r = ROLES[el.value], isAdm = el.value === 'admin';
+    f.querySelector('#permGrid').classList.toggle('is-admin', isAdm);
+    f.querySelector('.pg-note').textContent = isAdm ? 'Quản trị viên có toàn quyền mọi module, được mời / khoá / xoá tài khoản và phân quyền.' : 'Tổng quan và Chat luôn có. Chọn mức cho từng module:';
+    PERM_MODS.forEach(([k]) => f.querySelectorAll(`[name=p_${k}]`).forEach(i => { i.disabled = isAdm; if (isAdm) i.checked = i.value === 'edit'; else if (r.perms) i.checked = i.value === (r.perms[k] || 'none'); }));
+  };
+  CHG['adm-lv'] = el => {
+    const f = el.closest('form'), cur = Object.fromEntries(PERM_MODS.map(([k]) => [k, (f.querySelector(`[name=p_${k}]:checked`) || {}).value || 'none']));
+    const match = Object.entries(ROLES).find(([k, r]) => r.perms && PERM_MODS.every(([m]) => (r.perms[m] || 'none') === cur[m]));
+    f.querySelector('#pg-role').value = match ? match[0] : 'custom';
+  };
   MOD.admin = () => {
     if (!L.isAdmin) return emptyBox('Chỉ quản trị viên', 'Bạn không có quyền xem trang này.');
     if (!ui.authUsers && !ui.authLoading){ ui.authLoading = true; api('users').then(j => { ui.authUsers = j.users; ui.authErr = ''; }).catch(e => ui.authErr = e.message).finally(() => { ui.authLoading = false; renderSoft(); }); }
     const au = Object.fromEntries((ui.authUsers || []).map(u => [u.id, u]));
-    const q = (ui.admQ || '').toLowerCase();
-    const rows = S.profiles.filter(p => !q || (p.name + ' ' + p.email + ' ' + p.team).toLowerCase().includes(q));
-    const status = p => { const a = au[p.id]; if (!p.active) return pill('Đã khoá', 'red'); if (a && !a.confirmed) return pill('Chờ kích hoạt', 'yellow'); return pill('Hoạt động', 'green'); };
-    return head('Tài khoản', `${S.profiles.length} tài khoản · đăng nhập bằng email công ty. Người mới nhận email mời để tự đặt mật khẩu.`, `<button class="btn" data-act="adm-invite">${ic('plus', 15)}Mời nhân viên</button>`)
+    const cur = sub('admin', 'list'), q = (ui.admQ || '').toLowerCase(), rf = ui.admRole || 'all';
+    const st = p => { const a = au[p.id]; return !p.active ? 'locked' : a && !a.confirmed ? 'pending' : 'active'; };
+    const rows = S.profiles.filter(p => (!q || (p.name + ' ' + p.email + ' ' + p.team + ' ' + p.role).toLowerCase().includes(q)) && (rf === 'all' || roleOf(p) === rf));
+    const counts = {active:0, pending:0, locked:0}; S.profiles.forEach(p => counts[st(p)]++);
+    const statusPill = p => ({locked:pill('Đã khoá', 'red'), pending:pill('Chờ kích hoạt', 'yellow'), active:pill('Hoạt động', 'green')})[st(p)];
+    const usedRoles = [...new Set(S.profiles.map(roleOf))];
+    const tabs = subtabs('admin', [['list','Danh sách tài khoản'],['matrix','Ma trận phân quyền'],['roles','Vai trò mẫu']], 'list');
+    const filters = `<div class="row" style="flex-wrap:wrap"><div class="search" style="flex:1;min-width:220px;max-width:360px">${ic('search', 15)}<input id="adm-q" data-input="adm-q" value="${esc(ui.admQ || '')}" placeholder="Tìm theo tên, email, phòng ban"></div>
+      <div class="toolbar"><button class="fchip sm ${rf === 'all' ? 'on' : ''}" data-act="adm-rf" data-r="all">Tất cả vai trò</button>${usedRoles.map(r => `<button class="fchip sm ${rf === r ? 'on' : ''}" data-act="adm-rf" data-r="${r}">${ROLES[r].label}</button>`).join('')}</div></div>`;
+    let body;
+    if (cur === 'list'){
+      body = filters + `<div class="table-wrap"><table><thead><tr><th>Nhân viên</th><th>Chức danh · Phòng ban</th><th>Vai trò</th><th>Được dùng</th><th>Trạng thái</th><th>Đăng nhập gần nhất</th><th></th></tr></thead><tbody>
+        ${rows.map(p => { const a = au[p.id]; const on = PERM_MODS.filter(([m]) => permOf(p, m) !== 'none');
+          return `<tr class="click" data-act="adm-edit" data-id="${p.id}" tabindex="0"><td><div class="who">${av(p.id, 30)}<span><b style="font-weight:500">${esc(p.name)}${p.id === L.uid ? ' (bạn)' : ''}</b><small>${esc(p.email)}</small></span></div></td>
+          <td>${esc(p.role || '—')}${p.team ? `<div class="small muted">${esc(p.team)}</div>` : ''}</td>
+          <td>${pill(ROLES[roleOf(p)].label, roleOf(p) === 'admin' ? 'purple' : roleOf(p) === 'custom' ? 'orange' : 'gray')}</td>
+          <td><div class="mod-dots">${PERM_MODS.map(([m, l]) => `<span class="md md-${permOf(p, m)}" title="${l}: ${{edit:'Được sửa', view:'Chỉ xem', none:'Không'}[permOf(p, m)]}">${l.split(' ').map(w => w[0]).join('').slice(0, 2)}</span>`).join('')}</div><small class="muted">${on.length}/${PERM_MODS.length} module</small></td>
+          <td>${statusPill(p)}</td><td class="small">${a && a.last_sign_in_at ? ago(Date.parse(a.last_sign_in_at)) : '—'}</td>
+          <td class="r"><button class="btn line sm" data-act="adm-edit" data-id="${p.id}">Quản lý</button></td></tr>`; }).join('') || '<tr><td colspan="7" class="empty">Không có tài khoản phù hợp</td></tr>'}
+        </tbody></table></div>
+        <div class="legend"><span><i style="--c:var(--green)"></i>Được sửa</span><span><i style="--c:var(--blue)"></i>Chỉ xem</span><span><i style="--c:var(--line)"></i>Không truy cập</span></div>`;
+    } else if (cur === 'matrix'){
+      body = filters + `<div class="small muted">Bấm vào ô để đổi nhanh: Không → Xem → Sửa. Quản trị viên luôn có toàn quyền.</div>
+        <div class="table-wrap"><table class="matrix"><thead><tr><th>Nhân viên</th><th>Vai trò</th>${PERM_MODS.map(([, l]) => `<th class="c">${l}</th>`).join('')}</tr></thead><tbody>
+        ${rows.map(p => `<tr><td><div class="who">${av(p.id, 26)}<span><b style="font-weight:500">${esc(p.name)}</b><small>${esc(p.team || p.email)}</small></span></div></td><td>${pill(ROLES[roleOf(p)].label, roleOf(p) === 'admin' ? 'purple' : roleOf(p) === 'custom' ? 'orange' : 'gray')}</td>
+          ${PERM_MODS.map(([m]) => `<td class="c">${p.isAdmin ? lvCell('edit') : `<button class="lv-btn" data-act="adm-cycle" data-id="${p.id}" data-m="${m}" aria-label="Đổi quyền">${lvCell(permOf(p, m))}</button>`}</td>`).join('')}</tr>`).join('')}
+        </tbody></table></div>`;
+    } else {
+      body = `<div class="small muted">Vai trò là mẫu quyền để áp nhanh khi mời hoặc sửa tài khoản. Sau khi áp vẫn chỉnh riêng từng module được (khi đó vai trò hiện “Tuỳ chỉnh”).</div>
+        <div class="table-wrap"><table class="matrix"><thead><tr><th>Vai trò</th><th class="r">Số người</th>${PERM_MODS.map(([, l]) => `<th class="c">${l}</th>`).join('')}</tr></thead><tbody>
+        ${Object.entries(ROLES).filter(([k]) => k !== 'custom').map(([k, r]) => `<tr><td><b style="font-weight:500">${r.label}</b></td><td class="r">${S.profiles.filter(p => roleOf(p) === k).length}</td>${PERM_MODS.map(([m]) => `<td class="c">${lvCell(r.admin ? 'edit' : (r.perms[m] || 'none'))}</td>`).join('')}</tr>`).join('')}
+        </tbody></table></div>`;
+    }
+    return head('Tài khoản & phân quyền', 'Mời nhân viên bằng email công ty, chọn vai trò và mức quyền từng module. Quyền được kiểm tra ở cả máy chủ.', `<button class="btn" data-act="adm-invite">${ic('plus', 15)}Mời nhân viên</button>`)
       + (ui.authErr ? `<div class="card pad small" style="background:var(--red-t);color:var(--red)">${esc(ui.authErr)} — kiểm tra biến SUPABASE_SERVICE_KEY trên Render.</div>` : '')
-      + `<div class="search" style="max-width:360px">${ic('search', 15)}<input id="adm-q" data-input="adm-q" value="${esc(ui.admQ || '')}" placeholder="Tìm theo tên, email, phòng ban"></div>
-      <div class="table-wrap"><table><thead><tr><th>Nhân viên</th><th>Email</th><th>Chức danh · Phòng ban</th><th>Vai trò</th><th>Trạng thái</th><th>Đăng nhập gần nhất</th><th></th></tr></thead><tbody>
-      ${rows.map(p => { const a = au[p.id]; return `<tr><td><div class="who">${av(p.id, 28)}<b style="font-weight:500">${esc(p.name)}</b></div></td><td>${esc(p.email)}</td><td>${esc(p.role || '—')}${p.team ? ' · ' + esc(p.team) : ''}</td><td>${p.isAdmin ? pill('Quản trị', 'purple') : pill('Nhân viên', 'gray')}</td><td>${status(p)}</td><td class="small">${a && a.last_sign_in_at ? ago(Date.parse(a.last_sign_in_at)) : '—'}</td><td class="r"><button class="btn line sm" data-act="adm-edit" data-id="${p.id}">Quản lý</button></td></tr>`; }).join('')}
-      </tbody></table></div>`;
+      + `<div class="stats">${stat('Tổng tài khoản', S.profiles.length, S.profiles.filter(p => p.isAdmin).length + ' quản trị viên')}${stat('Đang hoạt động', counts.active, 'đã kích hoạt')}${stat('Chờ kích hoạt', counts.pending, 'chưa đặt mật khẩu', counts.pending ? 'bad' : '')}${stat('Đã khoá', counts.locked, 'không đăng nhập được')}</div>`
+      + tabs + body;
   };
   INP['adm-q'] = el => { ui.admQ = el.value; render(); };
-  ACT['adm-invite'] = () => showModal(`<form class="modal" data-form="adm-invite"><h3>Mời nhân viên${closeBtn()}</h3>
-    <div class="sub">Hệ thống gửi email mời, nhân viên bấm link để tự đặt mật khẩu.</div>
-    <label class="field">Email công ty<input id="ai-email" name="email" type="email" required placeholder="ten@congty.vn"></label>
-    <div class="row2"><label class="field">Họ tên<input id="ai-name" name="name" required></label><label class="field">Chức danh<input id="ai-title" name="title" placeholder="VD: Kỹ sư QS"></label></div>
-    <label class="field">Phòng ban / đội<input id="ai-team" name="team" list="ai-teams"></label>
+  ACT['adm-rf'] = (el, d) => { ui.admRole = d.r; render(); };
+  const reloadProfiles = async () => { const {data} = await sb.from('profiles').select('*').order('name'); if (data) S.profiles = data.map(mapProfile); };
+  ACT['adm-cycle'] = async (el, d) => {
+    const p = S.profiles.find(x => x.id === d.id), next = {none:'view', view:'edit', edit:'none'}[permOf(p, d.m)];
+    const perms = {...p.perms, [d.m]:next};
+    const match = Object.entries(ROLES).find(([k, r]) => r.perms && PERM_MODS.every(([m]) => (r.perms[m] || 'none') === (perms[m] || 'none')));
+    const {error} = await sb.from('profiles').update({perms, role:match ? match[0] : 'custom'}).eq('id', p.id);
+    if (error) return toast(error.message);
+    await reloadProfiles(); render();
+  };
+  ACT['adm-invite'] = () => showModal(`<form class="modal wide" data-form="adm-invite"><h3>Mời nhân viên${closeBtn()}</h3>
+    <div class="sub">Hệ thống gửi email mời tới email công ty, nhân viên bấm link để tự đặt mật khẩu.</div>
+    <div class="row2"><label class="field">Email công ty<input id="ai-email" name="email" type="email" required placeholder="ten@congty.vn"></label><label class="field">Họ tên<input id="ai-name" name="name" required></label></div>
+    <div class="row2"><label class="field">Chức danh<input id="ai-title" name="title" placeholder="VD: Kỹ sư QS"></label><label class="field">Phòng ban / đội<input id="ai-team" name="team" list="ai-teams"></label></div>
     <datalist id="ai-teams">${[...new Set(S.profiles.map(p => p.team).filter(Boolean))].map(t => `<option value="${esc(t)}">`).join('')}</datalist>
-    <label class="checks"><label><input type="checkbox" name="is_admin">Quyền quản trị (mời, khoá, xoá tài khoản)</label></label>
-    <div class="m-actions"><button type="button" class="btn ghost" data-act="modal-close">Huỷ</button><button class="btn" type="submit">Gửi lời mời</button></div></form>`);
+    ${permGrid(ROLES.staff.perms, 'staff')}
+    <div class="m-actions"><button type="button" class="btn ghost" data-act="modal-close">Huỷ</button><button class="btn" type="submit">${ic('check', 15)}Gửi lời mời</button></div></form>`);
   FORM['adm-invite'] = async (v, f) => {
     const btn = f.querySelector('[type=submit]'); btn.disabled = true; btn.textContent = 'Đang gửi…';
-    try { await api('invite', {email:v.email, name:v.name, title:v.title, team:v.team, is_admin:!!v.is_admin}); }
+    const role = v.role || 'staff';
+    try { await api('invite', {email:v.email, name:v.name, title:v.title, team:v.team, is_admin:role === 'admin', role, perms:role === 'admin' ? {} : readGrid(v)}); }
     catch (e){ btn.disabled = false; btn.textContent = 'Gửi lời mời'; return toast(e.message); }
     closeModal(); ui.authUsers = null; toast('Đã gửi email mời tới ' + v.email);
-    const {data} = await sb.from('profiles').select('*').order('name'); if (data) S.profiles = data.map(mapProfile); render();
+    await reloadProfiles(); render();
   };
   ACT['adm-edit'] = (el, d) => {
     const p = S.profiles.find(x => x.id === d.id), a = (ui.authUsers || []).find(x => x.id === d.id) || {};
     const self = p.id === L.uid;
-    showModal(`<form class="modal" data-form="adm-edit" data-id="${p.id}"><h3>${esc(p.name)}${closeBtn()}</h3><div class="sub">${esc(p.email)}</div>
+    showModal(`<form class="modal wide" data-form="adm-edit" data-id="${p.id}"><h3><span class="row">${av(p.id, 36)}<span>${esc(p.name)}<div class="small muted" style="font-weight:400">${esc(p.email)}</div></span></span>${closeBtn()}</h3>
       <div class="row2"><label class="field">Họ tên<input id="ae-name" name="name" required value="${esc(p.name)}"></label><label class="field">Chức danh<input id="ae-title" name="title" value="${esc(p.role)}"></label></div>
       <label class="field">Phòng ban / đội<input id="ae-team" name="team" value="${esc(p.team)}"></label>
-      <label class="checks"><label><input type="checkbox" name="is_admin" ${p.isAdmin ? 'checked' : ''} ${self ? 'disabled' : ''}>Quyền quản trị</label></label>
-      <div class="row" style="flex-wrap:wrap"><button type="button" class="btn line sm" data-act="adm-do" data-a="resend" data-id="${p.id}">${a.confirmed === false ? 'Gửi lại email mời' : 'Gửi email đặt lại mật khẩu'}</button>
-        ${self ? '' : `<button type="button" class="btn line sm" data-act="adm-do" data-a="${p.active ? 'lock' : 'unlock'}" data-id="${p.id}">${p.active ? 'Khoá tài khoản' : 'Mở khoá'}</button><button type="button" class="btn danger sm" data-act="adm-do" data-a="delete" data-id="${p.id}">Xoá tài khoản</button>`}</div>
-      <div class="m-actions"><button type="button" class="btn ghost" data-act="modal-close">Đóng</button><button class="btn" type="submit">Lưu</button></div></form>`);
+      ${self ? `<div class="card pad small" style="background:var(--purple-t)">Đây là tài khoản của bạn (quản trị viên). Không tự hạ quyền được — nhờ quản trị viên khác nếu cần.</div>` : permGrid(p.perms, roleOf(p))}
+      <div class="field">Tài khoản<div class="row" style="flex-wrap:wrap"><button type="button" class="btn line sm" data-act="adm-do" data-a="resend" data-id="${p.id}">${ic('bell', 13)}${a.confirmed === false ? 'Gửi lại email mời' : 'Gửi email đặt lại mật khẩu'}</button>
+        ${self ? '' : `<button type="button" class="btn line sm" data-act="adm-do" data-a="${p.active ? 'lock' : 'unlock'}" data-id="${p.id}">${p.active ? 'Khoá tài khoản' : 'Mở khoá'}</button><button type="button" class="btn danger sm" data-act="adm-do" data-a="delete" data-id="${p.id}">Xoá tài khoản</button>`}</div></div>
+      <div class="m-actions"><button type="button" class="btn ghost" data-act="modal-close">Đóng</button><button class="btn" type="submit">Lưu thay đổi</button></div></form>`);
   };
   FORM['adm-edit'] = async (v, f) => {
     const patch = {name:v.name.trim(), title:v.title.trim(), team:v.team.trim()};
-    if (f.dataset.id !== L.uid) patch.is_admin = !!v.is_admin;
+    if (f.dataset.id !== L.uid && v.role){ patch.role = v.role; patch.is_admin = v.role === 'admin'; if (v.role !== 'admin') patch.perms = readGrid(v); }
     const {error} = await sb.from('profiles').update(patch).eq('id', f.dataset.id);
     if (error) return toast(error.message);
-    const {data} = await sb.from('profiles').select('*').order('name'); if (data) S.profiles = data.map(mapProfile);
-    closeModal(); render(); toast('Đã lưu');
+    await reloadProfiles(); closeModal(); render(); toast('Đã lưu tài khoản & quyền');
   };
   ACT['adm-do'] = async (el, d) => {
     const risky = d.a === 'delete' || d.a === 'lock';
