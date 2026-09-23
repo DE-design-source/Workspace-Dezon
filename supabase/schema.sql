@@ -1,5 +1,5 @@
 -- =====================================================================
--- SiteFlow Workspace — schema Supabase
+-- Dezon Workspace — schema Supabase
 -- Chạy 1 lần trong Supabase Dashboard → SQL Editor (chạy lại nhiều lần vẫn an toàn).
 --
 -- Gồm:
@@ -13,7 +13,7 @@
 create extension if not exists pgcrypto;
 
 -- Hai cuộc hội thoại cố định: mọi tài khoản mới tự được thêm vào.
---   SiteFlow Bot      : 00000000-0000-0000-0000-000000000b07
+--   Dezbot      : 00000000-0000-0000-0000-000000000b07
 --   Toàn công ty      : 00000000-0000-0000-0000-000000000001
 
 -- ============ Hồ sơ người dùng ============
@@ -201,9 +201,10 @@ create trigger stamp_record before insert or update on public.records
 
 -- ============ Tài khoản mới → hồ sơ + vào 2 hội thoại chung ============
 insert into public.conversations(id, type, name, icon, color)
-  values ('00000000-0000-0000-0000-000000000b07', 'bot', 'SiteFlow Bot', 'bot', 'gray'),
+  values ('00000000-0000-0000-0000-000000000b07', 'bot', 'Dezbot', 'bot', 'gray'),
          ('00000000-0000-0000-0000-000000000001', 'group', 'Toàn công ty', 'users', 'purple')
   on conflict (id) do nothing;
+update public.conversations set name = 'Dezbot' where id = '00000000-0000-0000-0000-000000000b07' and name <> 'Dezbot';
 
 create or replace function public.handle_new_user() returns trigger
 language plpgsql security definer set search_path = public as $$

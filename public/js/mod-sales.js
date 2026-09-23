@@ -1,4 +1,4 @@
-/* SiteFlow — Tổng quan, Kinh doanh, Dự án, Chat */
+/* Dezon Workspace — Tổng quan, Kinh doanh, Dự án, Chat */
 
 /* ================= dữ liệu mẫu ================= */
 const at = (hhmm, dayOff = 0) => { const d = today0(); d.setDate(d.getDate() + dayOff); const [h, m] = hhmm.split(':').map(Number); d.setHours(h, m, 0, 0); return d.getTime(); };
@@ -29,7 +29,7 @@ SEEDS.push(s => {
   const G = (id, name, sub, icon, c, members, extra = {}) => ({id, type:'group', name, sub, icon, c, members, files:[], ...extra});
   s.convs = [
     G('g-riverside','Riverside — Giai đoạn 2','Nhóm dự án','building','blue',['da','nh','hoa','lv','ta','tl','ct'],{pid:'riverside', files:[{name:'Ban_ve_dien_tang2.pdf', size:'2.4 MB'},{name:'Bao_cao_tien_do_T9.xlsx', size:'860 KB'}]}),
-    {id:'bot', type:'bot', name:'SiteFlow Bot', sub:'Thông báo hệ thống', icon:'bot', c:'gray', members:[], files:[]},
+    {id:'bot', type:'bot', name:'Dezbot', sub:'Thông báo hệ thống', icon:'bot', c:'gray', members:[], files:[]},
     {id:'dm-nh', type:'dm', user:'nh', members:['nh','ta'], files:[]},
     {id:'dm-bn', type:'dm', user:'bn', members:['bn','ta'], files:[]},
     G('g-bch','Ban chỉ huy công trường','8 thành viên','hardhat','green',['da','tl','ta','lv','nh','ts']),
@@ -395,7 +395,7 @@ SEARCH.push(hit => S.leads.filter(l => hit(l.name + ' ' + l.proj + ' ' + l.phone
 const convMsgs = id => S.msgs.filter(m => m.cv === id);
 const convUnread = id => LIVE ? LIVE.unread(id) : Math.max(0, convMsgs(id).length - (S.read[id] || 0));
 function chatUnreadTotal(){ return S.convs ? sum(S.convs, c => convUnread(c.id)) : 0; }
-const convName = c => c.type === 'dm' ? person(c.user).name : c.name;
+const convName = c => c.type === 'dm' ? person(c.user).name : c.type === 'bot' ? 'Dezbot' : c.name;
 const convSub = c => c.type === 'dm' ? person(c.user).team + ' · ' + person(c.user).role : c.type === 'group' ? c.members.length + ' thành viên' + (c.pid ? ' · ' + c.sub : '') : c.sub;
 const convIcon = (c, s = 36) => c.type === 'dm' ? av(c.user, s) : `<span class="sq" style="--c:${cv(c.c)};--t:${ct(c.c)};width:${s}px;height:${s}px">${ic(c.icon, Math.round(s / 2))}</span>`;
 const LV = {red:['red','alert'], yellow:['yellow','pin'], blue:['blue','info'], green:['green','check']};
@@ -416,7 +416,7 @@ MOD.chat = () => {
   const msgs = convMsgs(c.id).map(m => {
     const day = iso(new Date(m.t)); let sep = '';
     if (day !== lastDay){ lastDay = day; sep = `<div class="day-sep">${relDay(day)}</div>`; }
-    if (m.bot){ const [col, icn] = LV[m.bot.level] || LV.blue; return sep + `<div class="botmsg" style="--c:${cv(col)};--t:${ct(col)}"><b>${ic(icn, 15)}${esc(m.bot.title)}</b><p>${esc(m.text)}</p><small><span>SiteFlow Bot · ${esc(m.bot.meta)} · ${hm(m.t)}</span>${m.bot.go ? `<button class="link" data-act="nav" data-v="${m.bot.go}" ${m.bot.sub ? `data-sub="${m.bot.sub}"` : ''}>Xem chi tiết ›</button>` : ''}</small></div>`; }
+    if (m.bot){ const [col, icn] = LV[m.bot.level] || LV.blue; return sep + `<div class="botmsg" style="--c:${cv(col)};--t:${ct(col)}"><b>${ic(icn, 15)}${esc(m.bot.title)}</b><p>${esc(m.text)}</p><small><span>Dezbot · ${esc(m.bot.meta)} · ${hm(m.t)}</span>${m.bot.go ? `<button class="link" data-act="nav" data-v="${m.bot.go}" ${m.bot.sub ? `data-sub="${m.bot.sub}"` : ''}>Xem chi tiết ›</button>` : ''}</small></div>`; }
     const me = m.from === S.me;
     const img = m.file && m.file.path && /^image\//.test(m.file.type || '');
     const file = m.file && !m.deleted ? (m.file.path

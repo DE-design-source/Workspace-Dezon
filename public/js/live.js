@@ -1,4 +1,4 @@
-/* SiteFlow — chế độ dữ liệu thật (Supabase): đăng nhập, đồng bộ dữ liệu dùng chung, chat realtime, quản trị tài khoản. */
+/* Dezon Workspace — chế độ dữ liệu thật (Supabase): đăng nhập, đồng bộ dữ liệu dùng chung, chat realtime, quản trị tài khoản. */
 
 const FIXED_CONVS = ['00000000-0000-0000-0000-000000000b07', '00000000-0000-0000-0000-000000000001'];
 const BOT_CONV = FIXED_CONVS[0];
@@ -45,7 +45,7 @@ async function liveBoot(){
   const shell = document.createElement('div');
   shell.id = 'auth'; shell.className = 'auth';
   document.body.appendChild(shell);
-  const authView = (inner) => { shell.hidden = false; shell.innerHTML = `<div class="auth-card"><div class="row" style="gap:12px;margin-bottom:22px"><div class="logo" style="margin:0">${IC.grid ? `<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="7" width="3.2" height="10" rx="1.6"/><rect x="10.4" y="4" width="3.2" height="16" rx="1.6"/><rect x="16.8" y="9" width="3.2" height="6" rx="1.6"/></svg>` : ''}</div><div><b style="font-size:16px">SiteFlow Workspace</b><div class="small muted">Không gian làm việc nội bộ</div></div></div>${inner}</div>`; const f = shell.querySelector('input'); if (f) f.focus(); };
+  const authView = (inner) => { shell.hidden = false; shell.innerHTML = `<div class="auth-card"><div class="row" style="gap:12px;margin-bottom:22px"><div class="logo" style="margin:0"><img src="/img/logo.png" alt="Dezon" width="40" height="40"></div><div><b style="font-size:16px">Dezon Workspace</b><div class="small muted">Không gian làm việc nội bộ</div></div></div>${inner}</div>`; const f = shell.querySelector('input'); if (f) f.focus(); };
   const msg = (t, bad) => `<div class="auth-msg ${bad ? 'bad' : ''}">${t}</div>`;
   function showLogin(note = '', bad = false){
     authView(`<h1 class="auth-h">Đăng nhập</h1><p class="muted small" style="margin:4px 0 18px">Dùng email công ty và mật khẩu của bạn.</p>${note ? msg(note, bad) : ''}
@@ -190,7 +190,7 @@ async function liveBoot(){
   function mapConv(c){
     const members = (L.members || []).filter(m => m.conversation_id === c.id).map(m => m.user_id);
     const other = c.type === 'dm' ? members.find(u => u !== L.uid) : null;
-    return {id:c.id, type:c.type, name:c.name, icon:c.type === 'bot' ? 'bot' : c.icon || 'users', c:c.color || 'blue', pid:c.project_id, members, files:[], user:other,
+    return {id:c.id, type:c.type, name:c.type === 'bot' ? 'Dezbot' : c.name, icon:c.type === 'bot' ? 'bot' : c.icon || 'users', c:c.color || 'blue', pid:c.project_id, members, files:[], user:other,
       sub:c.type === 'bot' ? 'Thông báo hệ thống' : c.project_id ? 'Nhóm dự án' : 'Nhóm'};
   }
   const mapMsg = m => ({id:m.id, cv:m.conversation_id, from:m.bot ? 'bot' : m.sender_id, by:m.sender_id, text:m.body || '', t:Date.parse(m.created_at), bot:m.bot,
@@ -257,10 +257,10 @@ async function liveBoot(){
     if (!('Notification' in window) || Notification.permission !== 'granted') return;
     if (!document.hidden && S.view === 'chat' && S.cv === m.cv) return;
     const c = S.convs.find(x => x.id === m.cv) || {};
-    const title = m.bot ? 'SiteFlow Bot · ' + m.bot.title : person(m.from).name + (c.type === 'group' ? ' · ' + c.name : '');
+    const title = m.bot ? 'Dezbot · ' + m.bot.title : person(m.from).name + (c.type === 'group' ? ' · ' + c.name : '');
     try { const n = new Notification(title, {body:m.file ? '📎 ' + m.file.name : m.text.slice(0, 140), tag:m.cv}); n.onclick = () => { window.focus(); S.cv = m.cv; nav('chat'); n.close(); }; } catch (e) {}
   }
-  function updateTitle(){ const n = chatUnreadTotal(); document.title = (n ? `(${n}) ` : '') + 'SiteFlow Workspace'; }
+  function updateTitle(){ const n = chatUnreadTotal(); document.title = (n ? `(${n}) ` : '') + 'Dezon Workspace'; }
 
   /* ---------- đồng bộ dữ liệu dùng chung ---------- */
   L.saveUi = () => { if (!L.uid) return; try { const o = {}; UI_KEYS.forEach(k => o[k] = S[k]); localStorage.setItem('sf-ui-' + L.uid, JSON.stringify(o)); } catch (e) {} };

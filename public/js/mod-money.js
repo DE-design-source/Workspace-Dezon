@@ -1,4 +1,4 @@
-/* SiteFlow — Tài chính, QS (Bóc tách & Báo giá), Wiki */
+/* Dezon Workspace — Tài chính, QS (Bóc tách & Báo giá), Wiki */
 
 /* ================= dữ liệu mẫu ================= */
 SEEDS.push(s => {
@@ -56,11 +56,11 @@ SEEDS.push(s => {
     ]};
   const W = (id, cat, title, updated, mdText, by = 'ta') => ({id, cat, title, updated:md(updated), by, md:mdText});
   s.wiki = {cur:'intro', cats:['Sổ tay nhân viên','Nội quy công ty','Quy trình làm việc','Biểu mẫu & tài liệu'], pages:[
-    W('intro','Sổ tay nhân viên','Giới thiệu công ty','2026-09-12',`Công ty TNHH Xây dựng SiteFlow hoạt động trong lĩnh vực thi công xây dựng dân dụng & công nghiệp, tổng thầu và quản lý dự án. Toàn bộ quy trình công trường — từ lập tiến độ, chấm công theo địa điểm đến kiểm soát dòng tiền — được số hoá để giảm sai sót và rút ngắn thời gian ra quyết định.
+    W('intro','Sổ tay nhân viên','Giới thiệu công ty','2026-09-12',`Công ty DEZON hoạt động trong lĩnh vực thi công xây dựng dân dụng & công nghiệp, tổng thầu và quản lý dự án. Toàn bộ quy trình công trường — từ lập tiến độ, chấm công theo địa điểm đến kiểm soát dòng tiền — được số hoá để giảm sai sót và rút ngắn thời gian ra quyết định.
 
 ## Thông tin công ty
 | Mục | Nội dung |
-| Tên công ty | Công ty TNHH Xây dựng SiteFlow |
+| Tên công ty | Công ty DEZON |
 | Địa chỉ trụ sở | 123 Đại lộ Nguyễn Văn Linh, Quận 7, TP.HCM |
 | Ngày thành lập | 15/03/2016 |
 | Lĩnh vực | Thi công xây dựng, tổng thầu, quản lý dự án |
@@ -107,7 +107,7 @@ Xét định kỳ 1 lần/năm vào tháng 3 dựa trên đánh giá hiệu qu�
 - Phép chưa dùng được chuyển sang quý 1 năm sau
 
 ## Cách xin nghỉ
-1. Tạo đơn trên SiteFlow (mục Chấm công) trước ít nhất 3 ngày làm việc
+1. Tạo đơn trên Dezon Workspace (mục Chấm công) trước ít nhất 3 ngày làm việc
 2. Quản lý trực tiếp duyệt trong 24 giờ
 3. Nghỉ đột xuất: báo qua Chat cho quản lý trước 7h sáng
 
@@ -129,7 +129,7 @@ Chấm công bằng ứng dụng tại vị trí công trường (bán kính 100
 - Kính, găng tay theo từng công việc (cắt, hàn, trộn vữa)
 
 ## Điểm danh an toàn hằng ngày
-Mỗi sáng tổ trưởng kiểm tra trang bị và bấm **Điểm danh an toàn** trên SiteFlow. Chuỗi ngày không sự cố được cộng điểm thưởng.
+Mỗi sáng tổ trưởng kiểm tra trang bị và bấm **Điểm danh an toàn** trên Dezon Workspace. Chuỗi ngày không sự cố được cộng điểm thưởng.
 
 ## Khi có sự cố
 1. Dừng thi công khu vực, sơ cứu và gọi hotline an toàn
@@ -141,7 +141,7 @@ Trang phục lịch sự; thứ Sáu được mặc áo đồng phục công ty.
 ## Công trường
 Mặc đồng phục và đầy đủ bảo hộ trong suốt ca làm việc. Giữ gìn vệ sinh khu vực thi công sau mỗi ca.`),
     W('att-proc','Quy trình làm việc','Chấm công & xin nghỉ','2026-09-05',`## Chấm công hằng ngày
-1. Mở SiteFlow trên điện thoại khi đến công trường
+1. Mở Dezon Workspace trên điện thoại khi đến công trường
 2. Bấm **Chấm công vào** khi ở trong bán kính công trường
 3. Cuối ca bấm **Chấm công ra**
 
@@ -158,7 +158,7 @@ Nếu làm việc ở vị trí khác (kho, nhà cung cấp), ghi chú lý do đ
 2. Người duyệt kiểm tra ngân sách hạng mục còn lại
 3. Kế toán thanh toán và cập nhật dòng tiền`, 'bn'),
     W('accept','Quy trình làm việc','Nghiệm thu công việc','2026-08-10',`## Nghiệm thu nội bộ
-Tổ trưởng tự kiểm tra, chụp ảnh và đánh dấu hoàn thành nhiệm vụ trên SiteFlow.
+Tổ trưởng tự kiểm tra, chụp ảnh và đánh dấu hoàn thành nhiệm vụ trên Dezon Workspace.
 
 ## Nghiệm thu với tư vấn giám sát
 1. Chỉ huy trưởng đặt lịch nghiệm thu trước 1 ngày
@@ -430,7 +430,7 @@ MOD.qs = () => {
     body = `<div class="card pad row between" style="flex-wrap:wrap;gap:10px"><div class="row">${qsSelect}${q.quoted ? pill('Đã gửi khách hàng', 'green') : pill('Chưa gửi', 'gray')}</div>
       <div class="row" style="flex-wrap:wrap"><button class="btn line sm" data-act="quote-copy">${ic('copy', 14)}Sao chép bảng (dán vào Excel)</button><button class="btn sm" data-act="quote-send" ${q.quoted ? 'disabled' : ''}>${ic('check', 14)}Đánh dấu đã gửi khách hàng</button></div></div>
     <div class="doc" id="quoteDoc">
-      <div class="doc-head"><div><b style="font-size:15px">CÔNG TY TNHH XÂY DỰNG SITEFLOW</b><div style="color:#666;font-size:12px">123 Đại lộ Nguyễn Văn Linh, Q7, TP.HCM · Hotline: 1900 6868</div></div><div style="text-align:right;font-size:12px;color:#444">Số: ${esc(q.code)}/${parseD(todayISO()).getFullYear()}<br>Ngày: ${fmtFull(todayISO())}</div></div>
+      <div class="doc-head"><div><b style="font-size:15px">CÔNG TY DEZON</b><div style="color:#666;font-size:12px">123 Đại lộ Nguyễn Văn Linh, Q7, TP.HCM · Hotline: 1900 6868</div></div><div style="text-align:right;font-size:12px;color:#444">Số: ${esc(q.code)}/${parseD(todayISO()).getFullYear()}<br>Ngày: ${fmtFull(todayISO())}</div></div>
       <h2>BÁO GIÁ</h2>
       <div class="doc-info"><div><span style="color:#777">Khách hàng:</span> <b>${esc(q.client)}</b></div><div><span style="color:#777">Điện thoại:</span> ${esc(q.phone)}</div><div><span style="color:#777">Dự án:</span> ${esc(q.name)}</div><div><span style="color:#777">Địa chỉ:</span> ${esc(q.addr)}</div></div>
       <div style="overflow-x:auto"><table><thead><tr><th>Hạng mục / Sản phẩm</th><th class="r">SL</th><th class="r">Đơn giá</th><th class="r">Thành tiền</th></tr></thead><tbody>
@@ -440,7 +440,7 @@ MOD.qs = () => {
         <tr class="tot"><td colspan="3" class="r" style="font-size:15px">Tổng cộng</td><td class="r" style="font-size:15px">${vnd(sub_ + vat)}</td></tr>
       </tbody></table></div>
       <div style="font-size:12px;color:#666;margin-top:14px">Báo giá có hiệu lực 30 ngày. Giá đã bao gồm vận chuyển nội thành TP.HCM, chưa bao gồm nhân công lắp đặt.</div>
-      <div class="sign"><div>ĐẠI DIỆN KHÁCH HÀNG<small>(Ký, ghi rõ họ tên)</small></div><div>ĐẠI DIỆN SITEFLOW<small>(Ký, đóng dấu)</small>${esc(person(S.me).name)}</div></div>
+      <div class="sign"><div>ĐẠI DIỆN KHÁCH HÀNG<small>(Ký, ghi rõ họ tên)</small></div><div>ĐẠI DIỆN DEZON<small>(Ký, đóng dấu)</small>${esc(person(S.me).name)}</div></div>
     </div>
     <div class="small muted" style="text-align:center">Xuất file Excel / PDF và gửi email trực tiếp sẽ có khi nối máy chủ. Hiện có thể sao chép bảng để dán vào Excel.</div>`;
   } else {

@@ -1,4 +1,4 @@
-/* SiteFlow — Quản lý dự án (Tiến độ Gantt + Nhiệm vụ & điểm thưởng), Chấm công */
+/* Dezon Workspace — Quản lý dự án (Tiến độ Gantt + Nhiệm vụ & điểm thưởng), Chấm công */
 
 /* ================= dữ liệu mẫu ================= */
 SEEDS.push(s => {

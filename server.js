@@ -1,4 +1,4 @@
-// SiteFlow Workspace — máy chủ tối giản cho Render (không cần thư viện ngoài).
+// Dezon Workspace — máy chủ tối giản cho Render (không cần thư viện ngoài).
 //  • Phục vụ giao diện tĩnh trong /public
 //  • /config.js : cấu hình Supabase cho trình duyệt (URL + publishable/anon key — công khai)
 //  • /api/admin/* : quản lý tài khoản, dùng khoá bí mật SUPABASE_SERVICE_KEY (chỉ nằm ở server)
@@ -128,4 +128,4 @@ http.createServer((req, res) => {
       res.end(buf);
     });
   });
-}).listen(PORT, () => console.log('SiteFlow workspace chạy tại cổng ' + PORT + (SB_URL ? ' · Supabase: ' + SB_URL : ' · chế độ demo')));
+}).listen(PORT, () => console.log('Dezon Workspace chạy tại cổng ' + PORT + (SB_URL ? ' · Supabase: ' + SB_URL : ' · chế độ demo')));

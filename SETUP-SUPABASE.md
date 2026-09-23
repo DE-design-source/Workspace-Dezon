@@ -1,4 +1,4 @@
-# Kết nối Supabase cho SiteFlow Workspace
+# Kết nối Supabase cho Dezon Workspace
 
 Project: `unosioqjrigqcscodmzr` — https://supabase.com/dashboard/project/unosioqjrigqcscodmzr
 
@@ -26,19 +26,19 @@ Email mặc định của Supabase chỉ gửi được vài thư mỗi giờ. A
 | Google Workspace | smtp.gmail.com | 465 | noreply@congty.vn | App Password (tạo ở tài khoản Google → Bảo mật → Mật khẩu ứng dụng) |
 | Microsoft 365 | smtp.office365.com | 587 | noreply@congty.vn | mật khẩu hộp thư |
 
-Sender name: `SiteFlow Workspace`.
+Sender name: `Dezon Workspace`.
 
 ### Mẫu email tiếng Việt (Authentication → Emails → Templates)
 
-**Invite user** — Subject: `Bạn được mời vào SiteFlow Workspace`
+**Invite user** — Subject: `Bạn được mời vào Dezon Workspace`
 ```html
-<h2>Chào mừng bạn đến SiteFlow Workspace</h2>
+<h2>Chào mừng bạn đến Dezon Workspace</h2>
 <p>Bạn được mời dùng không gian làm việc nội bộ của công ty.</p>
 <p><a href="{{ .ConfirmationURL }}">Bấm vào đây để tạo mật khẩu và đăng nhập</a></p>
 <p>Link có hiệu lực trong 24 giờ. Đăng nhập bằng email này: {{ .Email }}</p>
 ```
 
-**Reset password** — Subject: `Đặt lại mật khẩu SiteFlow Workspace`
+**Reset password** — Subject: `Đặt lại mật khẩu Dezon Workspace`
 ```html
 <h2>Đặt lại mật khẩu</h2>
 <p>Có yêu cầu đặt lại mật khẩu cho tài khoản {{ .Email }}.</p>

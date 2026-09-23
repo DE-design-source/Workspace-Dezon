@@ -1,4 +1,4 @@
-/* SiteFlow Workspace — lõi: tiện ích, trạng thái, khung giao diện, biểu đồ, trợ lý. */
+/* Dezon Workspace — lõi: tiện ích, trạng thái, khung giao diện, biểu đồ, trợ lý. */
 
 /* ============ tiện ích ============ */
 const $ = (s, r = document) => r.querySelector(s);
@@ -236,7 +236,7 @@ const legend = items => `<div class="legend">${items.map(([c, l, shape]) => `<sp
 
 /* ============ khung ============ */
 function renderRail(){
-  let html = `<div class="logo" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="7" width="3.2" height="10" rx="1.6"/><rect x="10.4" y="4" width="3.2" height="16" rx="1.6"/><rect x="16.8" y="9" width="3.2" height="6" rx="1.6"/></svg></div>`;
+  let html = `<div class="logo" title="Dezon Workspace"><img src="/img/logo.png" alt="Dezon" width="40" height="40"></div>`;
   let grp = '';
   Object.entries(VIEWS).forEach(([k, v]) => {
     if (v.group !== grp){ grp = v.group; html += `<div class="rail-label">${grp}</div>`; }
@@ -271,7 +271,7 @@ function renderTop(){
   const scoped = v.scoped ? `<span class="ws">${ic('chev', 13)}</span><select data-change="pid" aria-label="Chọn dự án">${opt(S.projects.filter(p => p.status !== 'draft').map(p => [p.id, p.name]), S.pid)}</select>` : '';
   const newAct = S.activity.length > S.seenAct;
   $('#topbar').innerHTML = `
-    <div class="crumb"><span class="ws">${a ? 'Ứng dụng' : 'SiteFlow'}</span>${scoped}<span class="ws">${ic('chev', 13)}</span><b>${ic(v.icon, 16)}${esc(v.label)}</b>${a ? `<span class="ws small ell" style="max-width:260px">${esc(a.url.replace(/^https?:\/\//, '').replace(/\/$/, ''))}</span>` : ''}</div>
+    <div class="crumb"><span class="ws">${a ? 'Ứng dụng' : 'Dezon'}</span>${scoped}<span class="ws">${ic('chev', 13)}</span><b>${ic(v.icon, 16)}${esc(v.label)}</b>${a ? `<span class="ws small ell" style="max-width:260px">${esc(a.url.replace(/^https?:\/\//, '').replace(/\/$/, ''))}</span>` : ''}</div>
     <div class="top-actions">${appBtns}
       <button class="icon-btn" data-act="palette" aria-label="Tìm nhanh" title="Tìm nhanh (Ctrl K)">${ic('search')}</button>
       <button class="icon-btn" data-act="nav" data-v="chat" aria-label="Chat" title="Chat">${ic('chat')}${chatUnreadTotal() ? '<span class="badge"></span>' : ''}</button>
