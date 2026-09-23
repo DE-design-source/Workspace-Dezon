@@ -101,6 +101,8 @@ input,select,textarea{font:inherit;color:inherit}
 .act small{display:block;color:var(--muted);font-size:11px}
 
 .view{padding:24px 12px 4px;display:flex;flex-direction:column;gap:22px;flex:1;min-height:0;min-width:0}
+/* các khối trong trang giữ nguyên chiều cao nội dung (không bị ép co thành ô cuộn); riêng Chat co giãn theo màn hình */
+.view > *:not(.chat){flex-shrink:0}
 .hello h1{font-size:24px;font-weight:600;margin:0;letter-spacing:-.015em;text-wrap:balance}
 .hello p{color:var(--ink-2);margin:6px 0 0;font-size:13.5px;max-width:70ch}
 .head-row{display:flex;align-items:flex-end;justify-content:space-between;gap:12px 16px;flex-wrap:wrap}
