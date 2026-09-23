@@ -430,7 +430,7 @@ MOD.qs = () => {
     body = `<div class="card pad row between" style="flex-wrap:wrap;gap:10px"><div class="row">${qsSelect}${q.quoted ? pill('Đã gửi khách hàng', 'green') : pill('Chưa gửi', 'gray')}</div>
       <div class="row" style="flex-wrap:wrap"><button class="btn line sm" data-act="quote-copy">${ic('copy', 14)}Sao chép bảng (dán vào Excel)</button><button class="btn sm" data-act="quote-send" ${q.quoted ? 'disabled' : ''}>${ic('check', 14)}Đánh dấu đã gửi khách hàng</button></div></div>
     <div class="doc" id="quoteDoc">
-      <div class="doc-head"><div><b style="font-size:15px">CÔNG TY DEZON</b><div style="color:#666;font-size:12px">123 Đại lộ Nguyễn Văn Linh, Q7, TP.HCM · Hotline: 1900 6868</div></div><div style="text-align:right;font-size:12px;color:#444">Số: ${esc(q.code)}/${parseD(todayISO()).getFullYear()}<br>Ngày: ${fmtFull(todayISO())}</div></div>
+      <div class="doc-head"><div>${companyHead()}</div><div style="text-align:right;font-size:12px;color:#444">Số: ${esc(q.code)}/${parseD(todayISO()).getFullYear()}<br>Ngày: ${fmtFull(todayISO())}</div></div>
       <h2>BÁO GIÁ</h2>
       <div class="doc-info"><div><span style="color:#777">Khách hàng:</span> <b>${esc(q.client)}</b></div><div><span style="color:#777">Điện thoại:</span> ${esc(q.phone)}</div><div><span style="color:#777">Dự án:</span> ${esc(q.name)}</div><div><span style="color:#777">Địa chỉ:</span> ${esc(q.addr)}</div></div>
       <div style="overflow-x:auto"><table><thead><tr><th>Hạng mục / Sản phẩm</th><th class="r">SL</th><th class="r">Đơn giá</th><th class="r">Thành tiền</th></tr></thead><tbody>
@@ -440,14 +440,14 @@ MOD.qs = () => {
         <tr class="tot"><td colspan="3" class="r" style="font-size:15px">Tổng cộng</td><td class="r" style="font-size:15px">${vnd(sub_ + vat)}</td></tr>
       </tbody></table></div>
       <div style="font-size:12px;color:#666;margin-top:14px">Báo giá có hiệu lực 30 ngày. Giá đã bao gồm vận chuyển nội thành TP.HCM, chưa bao gồm nhân công lắp đặt.</div>
-      <div class="sign"><div>ĐẠI DIỆN KHÁCH HÀNG<small>(Ký, ghi rõ họ tên)</small></div><div>ĐẠI DIỆN DEZON<small>(Ký, đóng dấu)</small>${esc(person(S.me).name)}</div></div>
+      <div class="sign"><div>ĐẠI DIỆN KHÁCH HÀNG<small>(Ký, ghi rõ họ tên)</small></div><div>ĐẠI DIỆN ${esc((company().short || 'DEZON').toUpperCase())}<small>(Ký, đóng dấu)</small>${esc(person(S.me).name)}</div></div>
     </div>
     <div class="small muted" style="text-align:center">Xuất file Excel / PDF và gửi email trực tiếp sẽ có khi nối máy chủ. Hiện có thể sao chép bảng để dán vào Excel.</div>`;
   } else {
-    const POS = {wait:['Chờ đặt hàng','yellow'], ordered:['Đã đặt hàng','blue'], received:['Đã nhận hàng','green']};
-    body = `<div class="card pad row between" style="flex-wrap:wrap;gap:10px"><div class="row">${qsSelect}<span class="small muted">Gom sản phẩm trong bảng bóc tách theo thương hiệu thành đơn mua.</span></div><button class="btn sm" data-act="po-gen">${ic('cart', 14)}Tạo đơn từ bóc tách</button></div>
-    <div class="table-wrap"><table><thead><tr><th>Mã đơn</th><th>Hồ sơ QS</th><th>Nhà cung cấp</th><th>Sản phẩm</th><th class="r">Giá trị</th><th>Ngày tạo</th><th>Trạng thái</th><th></th></tr></thead><tbody>
-      ${[...Q.po].sort((a, b) => b.date.localeCompare(a.date)).map(o => { const qp = Q.projects.find(x => x.id === o.qp) || {code:'—'}; const v = sum(o.items, it => prod(it.p).price * it.q); return `<tr><td class="b num">${esc(o.code)}</td><td>${esc(qp.code)}</td><td>${esc(o.brand)}</td><td class="small">${o.items.map(it => esc(prod(it.p).name) + ' × ' + it.q).join('<br>')}</td><td class="r b">${vnd(v)}</td><td>${fmtDate(o.date)}</td><td>${pill(...POS[o.status])}</td><td class="r">${o.status !== 'received' ? `<button class="btn line sm" data-act="po-next" data-id="${o.id}">${o.status === 'wait' ? 'Đã đặt hàng' : 'Đã nhận hàng'}</button>` : ''}</td></tr>`; }).join('')}
+    const mine = Q.po.filter(o => o.qp === q.id);
+    body = `<div class="card pad row between" style="flex-wrap:wrap;gap:10px"><div class="row">${qsSelect}<span class="small muted">Gom sản phẩm trong bảng bóc tách theo nhà cung cấp thành đơn mua (trạng thái Chờ duyệt).</span></div><div class="row"><button class="btn line sm" data-act="nav" data-v="po">Xem đầy đủ tại trang Mua hàng ›</button><button class="btn sm" data-act="po-gen">${ic('cart', 14)}Tạo đơn từ bóc tách</button></div></div>
+    <div class="table-wrap"><table><thead><tr><th>Mã đơn</th><th>Nhà cung cấp</th><th class="r">Số mặt hàng</th><th class="r">Giá trị</th><th>Ngày giao dự kiến</th><th>Trạng thái</th></tr></thead><tbody>
+      ${mine.map(o => `<tr class="click" data-act="po-open" data-id="${o.id}"><td class="b num">${esc(o.code)}</td><td>${esc(o.brand)}</td><td class="r">${o.items.length}</td><td class="r b">${vnd(poVal(o))}</td><td>${o.due ? fmtDate(o.due) : '—'}</td><td>${pill(...POST[o.status] || POST.wait)}</td></tr>`).join('') || '<tr><td colspan="6" class="empty">Hồ sơ này chưa có đơn mua</td></tr>'}
     </tbody></table></div>`;
   }
   const qsApp = S.apps.find(x => x.id === 'qspro');
@@ -524,7 +524,7 @@ ACT['po-gen'] = () => {
   q.rooms.forEach(r => r.items.forEach(it => { const p = prod(it.p); (by[p.brand] = by[p.brand] || {}); by[p.brand][it.p] = (by[p.brand][it.p] || 0) + it.q; }));
   const brands = Object.keys(by); if (!brands.length){ toast('Hồ sơ chưa có sản phẩm để tạo đơn'); return; }
   let n = Math.max(0, ...S.qs.po.map(o => +o.code.split('-')[1] || 0));
-  brands.forEach(b => S.qs.po.push({id:uid(), code:'PO-' + String(++n).padStart(4, '0'), qp:q.id, brand:b, items:Object.entries(by[b]).map(([p, qq]) => ({p, q:qq})), status:'wait', date:todayISO()}));
+  brands.forEach(b => S.qs.po.push({id:uid(), code:'PO-' + String(++n).padStart(4, '0'), qp:q.id, pid:q.pid || '', brand:b, items:Object.entries(by[b]).map(([p, qq]) => ({p, q:qq})), status:'approve', date:todayISO(), due:dayISO(7), note:'Từ bóc tách ' + q.code}));
   log(`Tạo ${brands.length} đơn mua từ ${q.code}`, 'purple'); render(); toast(`Đã tạo ${brands.length} đơn mua theo thương hiệu`);
 };
 ACT['po-next'] = (el, d) => { const o = S.qs.po.find(x => x.id === d.id); o.status = o.status === 'wait' ? 'ordered' : 'received'; log(`${o.code}: ${o.status === 'ordered' ? 'đã đặt hàng' : 'đã nhận hàng'}`, 'purple'); render(); };
@@ -560,11 +560,10 @@ MOD.wiki = () => {
   const {html, toc} = mdToHtml(pg.md);
   return head('Wiki công ty', 'Sổ tay, nội quy & quy trình nội bộ — áp dụng toàn công ty.', `<button class="btn line" data-act="wiki-edit" data-id="${pg.id}">${ic('edit', 15)}Sửa trang</button><button class="btn" data-act="wiki-new">${ic('plus', 15)}Trang mới</button>`) + `
     <div class="wiki">
-      <nav class="card wiki-tree" aria-label="Mục lục wiki"><div class="search" style="margin-bottom:6px">${ic('search', 15)}<input id="wiki-q" data-input="wiki-q" value="${esc(ui.wikiQ || '')}" placeholder="Tìm trong wiki" aria-label="Tìm trong wiki"></div>${tree || '<div class="empty">Không có trang phù hợp</div>'}</nav>
+      <nav class="card wiki-tree" aria-label="Mục lục wiki"><div class="search" style="margin-bottom:6px">${ic('search', 15)}<input id="wiki-q" data-input="wiki-q" value="${esc(ui.wikiQ || '')}" placeholder="Tìm trong wiki" aria-label="Tìm trong wiki"></div>${toc.length ? `<div class="wiki-toc"><div class="cat">Trong trang này</div>${toc.map(([id, t]) => `<a href="#${id}" data-act="wiki-toc" data-id="${id}">${esc(t)}</a>`).join('')}</div>` : ''}${tree || '<div class="empty">Không có trang phù hợp</div>'}</nav>
       <article class="card article"><div class="small muted">${esc(pg.cat)} ${ic('chev', 11)} ${esc(pg.title)}</div><h1>${esc(pg.title)}</h1>
         <div class="row small muted" style="margin-bottom:16px">${av(pg.by, 22)}Cập nhật bởi ${esc(person(pg.by).name)} · ${fmtFull(pg.updated)}</div>
         <div class="prose">${html}</div></article>
-      <aside class="card toc"><b style="font-size:12px;color:var(--muted)">TRONG TRANG NÀY</b>${toc.map(([id, t]) => `<a href="#${id}" data-act="wiki-toc" data-id="${id}">${esc(t)}</a>`).join('') || '<span class="muted">—</span>'}</aside>
     </div>`;
 };
 ACT['wiki-go'] = (el, d) => { S.wiki.cur = d.id; render(); $('#main').scrollTop = 0; };

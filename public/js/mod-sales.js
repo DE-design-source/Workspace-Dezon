@@ -9,7 +9,7 @@ SEEDS.push(s => {
     {id:'thaodien', name:'Biệt thự Song lập — Thảo Điền', client:'Chị Minh Thư', contact:'Chị Minh Thư', phone:'0912 887 234', email:'minhthu@example.com', addr:'Đường số 10, Thảo Điền, TP. Thủ Đức', type:'Biệt thự', budget:6800, progress:0, pm:'', team:'', safety:'', purchase:'', start:'', status:'draft', note:'Khách muốn khởi công sau Tết.', leadId:'l3'},
     {id:'q3', name:'Văn phòng cho thuê — Q3', client:'Cty TNHH ABC Logistics', contact:'Chị Thu', phone:'028 3930 1122', email:'admin@abclogistics.example', addr:'Võ Văn Tần, Quận 3, TP.HCM', type:'Văn phòng', budget:4200, progress:100, pm:'ta', team:'Đội thi công C', safety:'tl', purchase:'ct', start:md('2026-03-02'), status:'done', note:'', leadId:'l9'}
   ];
-  const L = (id, name, proj, phone, type, value, stage, upd, extra = {}) => ({id, name, proj, phone, email:'', source:'Giới thiệu', addr:'', type, scale:'', interests:['Xây dựng thô'], value, stage, owner:'ta', updated:md(upd), note:'', concept:'', boq:'', projectId:'', ...extra});
+  const L = (id, name, proj, phone, type, value, stage, upd, extra = {}) => ({id, dept:['Chung cư','Văn phòng','Khác'].includes(type) ? 'du-an' : 'dan-dung', name, proj, phone, email:'', source:'Giới thiệu', addr:'', type, scale:'', interests:['Xây dựng thô'], value, stage, owner:'ta', updated:md(upd), note:'', concept:'', boq:'', projectId:'', ...extra});
   s.leads = [
     L('l1','BQL Riverside','Mở rộng Giai đoạn 3','0909 123 456','Chung cư',15.0,'nego','2026-09-20',{source:'Khách cũ', interests:['Xây dựng thô','Hoàn thiện nội thất']}),
     L('l2','Chị Hải Yến','Biệt thự Nhà Bè','0918 345 221','Biệt thự',7.2,'nego','2026-09-19',{source:'Website'}),
@@ -176,11 +176,16 @@ const STG = [['lead','Tiếp cận','blue'],['consult','Tư vấn','purple'],['q
 const stg = k => STG.find(s => s[0] === k) || STG[0];
 const stIdx = k => STG.findIndex(s => s[0] === k);
 const OPEN_ST = ['lead','consult','quote','nego'];
+const DEPTS = {'du-an':['Phòng KD Dự Án','Dự án','blue'], 'dan-dung':['Phòng KD Dân dụng','Dân dụng','green']};
+const deptChip = d => DEPTS[d] ? `<span class="pill ${DEPTS[d][2]}" style="font-size:10.5px;padding:2px 7px">${DEPTS[d][1]}</span>` : '';
+const deptFilter = () => `<div class="seg">${[['all','Tất cả'], ...Object.entries(DEPTS).map(([k, v]) => [k, v[0]])].map(([k, l]) => `<button class="${(ui.salesDept || 'all') === k ? 'on' : ''}" data-act="sales-dept" data-k="${k}">${l}</button>`).join('')}</div>`;
+const inDept = l => (ui.salesDept || 'all') === 'all' || (l.dept || 'dan-dung') === ui.salesDept;
+ACT['sales-dept'] = (el, d) => { ui.salesDept = d.k; render(); };
 MOD.sales = () => {
   const cur = sub('sales', 'overview');
   const open = S.leads.filter(l => OPEN_ST.includes(l.stage));
   const won = S.leads.filter(l => stIdx(l.stage) >= 4);
-  const tabs = subtabs('sales', [['overview','Tổng quan'],['kanban','Pipeline khách hàng'],['list','Danh sách']], 'overview');
+  const tabs = subtabs('sales', [['overview','Tổng quan'],['kanban','Pipeline khách hàng'],['list','Khách hàng tiềm năng'],['quest','Nhiệm vụ & điểm thưởng']], 'overview');
   let body = '';
   if (cur === 'overview'){
     const funnel = STG.slice(0, 5).map(([k, l, c], i) => {
@@ -203,22 +208,24 @@ MOD.sales = () => {
         </div>
       </div>`;
   } else if (cur === 'kanban'){
-    body = `<div class="small muted">Kéo thả thẻ giữa các cột, hoặc dùng ô chọn giai đoạn trên thẻ. Thẻ vào cột “Dự án (Thiết kế)” / “Dự án (Thi công)” sẽ tự tạo hồ sơ ở tab Dự án.</div>
+    body = `<div class="row between" style="flex-wrap:wrap;gap:10px"><div class="small muted">Kéo thả thẻ giữa các cột, hoặc dùng ô chọn giai đoạn trên thẻ. Thẻ vào cột “Dự án (Thiết kế)” / “Dự án (Thi công)” sẽ tự tạo hồ sơ ở Quản lý dự án.</div>${deptFilter()}</div>
       <div class="board">${STG.map(([k, l, c]) => {
-        const items = S.leads.filter(x => x.stage === k);
+        const items = S.leads.filter(x => x.stage === k && inDept(x));
         return `<div class="col" data-drop="lead:${k}">
           <div class="col-h"><span class="dot" style="--c:${cv(c)}"></span>${l}<span class="n">${items.length}</span><span class="sum">${items.length ? ty(sum(items, x => x.value)) : ''}</span></div>
           ${items.map(x => `<div class="tcard" draggable="true" data-drag="lead:${x.id}">
-            <button data-act="lead" data-id="${x.id}" style="text-align:left"><span class="ttitle">${esc(x.name)}</span><div class="small muted">${esc(x.proj)} · ${esc(x.type)}</div></button>
+            <button data-act="lead" data-id="${x.id}" style="text-align:left"><span class="ttitle">${esc(x.name)}</span><div class="small muted">${esc(x.proj)} · ${esc(x.type)}</div></button>${deptChip(x.dept || 'dan-dung')}
             <div class="tfoot"><span class="val">${ty(x.value)}</span>${av(x.owner, 22)}</div>
             <div class="row between"><select data-change="lead-stage" data-id="${x.id}" aria-label="Chuyển giai đoạn">${opt(STG.map(s => [s[0], s[1]]), x.stage)}</select>${x.projectId ? `<button class="link" data-act="open-proj" data-id="${x.projectId}">Hồ sơ dự án ›</button>` : `<span class="small muted">${fmtDate(x.updated)}</span>`}</div>
           </div>`).join('')}
-          <form class="quick" data-form="lead-quick" data-stage="${k}"><input name="name" placeholder="+ Thêm thẻ nhanh" aria-label="Tên khách hàng mới ở cột ${l}"></form>
+          <form class="quick" data-form="lead-quick" data-stage="${k}" data-dept="${ui.salesDept && ui.salesDept !== 'all' ? ui.salesDept : 'dan-dung'}"><input name="name" placeholder="+ Thêm thẻ nhanh" aria-label="Tên khách hàng mới ở cột ${l}"></form>
         </div>`;
       }).join('')}</div>`;
+  } else if (cur === 'quest'){
+    body = questView('sales');
   } else {
-    body = `<div class="table-wrap"><table><thead><tr><th>Khách hàng</th><th>Điện thoại</th><th>Loại dự án</th><th class="r">Giá trị</th><th>Giai đoạn</th><th>Phụ trách</th><th>Cập nhật</th></tr></thead><tbody>
-      ${[...S.leads].sort((a, b) => b.updated.localeCompare(a.updated)).map(l => `<tr class="click" data-act="lead" data-id="${l.id}" tabindex="0"><td><b style="font-weight:500">${esc(l.name)}</b><div class="small muted">${esc(l.proj)}</div></td><td class="num">${esc(l.phone)}</td><td>${esc(l.type)}</td><td class="r b">${ty(l.value)}</td><td>${pill(stg(l.stage)[1], stg(l.stage)[2])}</td><td><div class="who">${av(l.owner, 22)}${esc(person(l.owner).name)}</div></td><td>${fmtDate(l.updated)}</td></tr>`).join('')}
+    body = `<div class="row between" style="flex-wrap:wrap;gap:10px"><span class="small muted">Lọc danh sách theo phòng ban phụ trách.</span>${deptFilter()}</div><div class="table-wrap"><table><thead><tr><th>Khách hàng</th><th>Điện thoại</th><th>Loại dự án</th><th>Phòng ban</th><th class="r">Giá trị</th><th>Giai đoạn</th><th>Phụ trách</th><th>Cập nhật</th></tr></thead><tbody>
+      ${[...S.leads].filter(inDept).sort((a, b) => b.updated.localeCompare(a.updated)).map(l => `<tr class="click" data-act="lead" data-id="${l.id}" tabindex="0"><td><b style="font-weight:500">${esc(l.name)}</b><div class="small muted">${esc(l.proj)}</div></td><td class="num">${esc(l.phone)}</td><td>${esc(l.type)}</td><td>${deptChip(l.dept || 'dan-dung')}</td><td class="r b">${ty(l.value)}</td><td>${pill(stg(l.stage)[1], stg(l.stage)[2])}</td><td><div class="who">${av(l.owner, 22)}${esc(person(l.owner).name)}</div></td><td>${fmtDate(l.updated)}</td></tr>`).join('')}
     </tbody></table></div>`;
   }
   return head('Kinh doanh', 'Pipeline khách hàng — chốt hợp đồng sẽ tự tạo hồ sơ tại tab Dự án.', `<button class="btn" data-act="lead-new">${ic('plus', 15)}Thêm khách hàng tiềm năng</button>`) + tabs + body;
@@ -238,20 +245,20 @@ DROP.lead = (id, st) => { const l = S.leads.find(x => x.id === id); if (l) setLe
 CHG['lead-stage'] = el => { const l = S.leads.find(x => x.id === el.dataset.id); if (l){ setLeadStage(l, el.value); render(); } };
 FORM['lead-quick'] = (v, f) => {
   if (!v.name.trim()) return;
-  S.leads.push({id:'l' + uid(), name:v.name.trim(), proj:'Chưa đặt tên dự án', phone:'', email:'', source:'Khác', addr:'', type:'Nhà phố', scale:'', interests:[], value:1, stage:f.dataset.stage, owner:S.me, updated:todayISO(), note:'', concept:'', boq:'', projectId:''});
+  S.leads.push({id:'l' + uid(), dept:f.dataset.dept || 'dan-dung', name:v.name.trim(), proj:'Chưa đặt tên dự án', phone:'', email:'', source:'Khác', addr:'', type:'Nhà phố', scale:'', interests:[], value:1, stage:f.dataset.stage, owner:S.me, updated:todayISO(), note:'', concept:'', boq:'', projectId:''});
   log('Thêm khách hàng ' + v.name.trim(), 'orange'); render();
   const inp = document.querySelector(`form[data-stage="${f.dataset.stage}"] input`); if (inp) inp.focus();
 };
-ACT['open-proj'] = (el, d) => { S.pid = d.id; S.sub.projects = 'detail'; nav('projects'); };
+ACT['open-proj'] = (el, d) => { S.pid = d.id; S.sub.pm = 'detail'; nav('projects'); };
 /* form 3 bước */
-ACT['lead-new'] = () => { ui.lead = {step:1, d:{id:'', name:'', proj:'', phone:'', email:'', source:'Giới thiệu', addr:'', type:'Nhà phố', scale:'', interests:[], value:1, stage:'lead', owner:S.me, note:'', concept:'', boq:''}}; leadModal(); };
+ACT['lead-new'] = () => { ui.lead = {step:1, d:{id:'', dept:ui.salesDept && ui.salesDept !== 'all' ? ui.salesDept : 'dan-dung', name:'', proj:'', phone:'', email:'', source:'Giới thiệu', addr:'', type:'Nhà phố', scale:'', interests:[], value:1, stage:'lead', owner:S.me, note:'', concept:'', boq:''}}; leadModal(); };
 ACT.lead = (el, d) => { const l = S.leads.find(x => x.id === d.id); ui.lead = {step:1, d:JSON.parse(JSON.stringify(l))}; leadModal(); };
 function leadModal(){
   const {step, d} = ui.lead;
   const f1 = `<div class="row2"><label class="field">Tên khách hàng *<input id="ld-name" name="name" required value="${esc(d.name)}"></label><label class="field">Số điện thoại *<input id="ld-phone" name="phone" required value="${esc(d.phone)}"></label></div>
     <div class="row2"><label class="field">Email<input id="ld-email" name="email" type="email" value="${esc(d.email)}"></label><label class="field">Nguồn khách hàng<select id="ld-source" name="source">${opt(['Giới thiệu','Website','Mạng xã hội','Sự kiện','Khách cũ','Khác'], d.source)}</select></label></div>
     <label class="field">Tên dự án / công trình<input id="ld-proj" name="proj" value="${esc(d.proj)}" placeholder="VD: Biệt thự Nhà Bè"></label>`;
-  const f2 = `<label class="field">Địa chỉ công trình<input id="ld-addr" name="addr" value="${esc(d.addr)}"></label>
+  const f2 = `<div class="row2"><label class="field">Địa chỉ công trình<input id="ld-addr" name="addr" value="${esc(d.addr)}"></label><label class="field">Phòng ban phụ trách<select id="ld-dept" name="dept">${opt(Object.entries(DEPTS).map(([k, v]) => [k, v[0]]), d.dept || 'dan-dung')}</select></label></div>
     <div class="row3"><label class="field">Loại dự án<select id="ld-type" name="type">${opt(['Nhà phố','Biệt thự','Chung cư','Văn phòng','Khác'], d.type)}</select></label><label class="field">Quy mô<input id="ld-scale" name="scale" value="${esc(d.scale)}" placeholder="VD: 3 tầng, 250m²"></label><label class="field">Giá trị ước tính (tỷ)<input id="ld-value" name="value" type="number" step="0.1" min="0" value="${d.value}"></label></div>
     <div class="field">Hạng mục quan tâm<div class="checks">${['Xây dựng thô','Hoàn thiện nội thất','Thiết kế kiến trúc','Cảnh quan sân vườn'].map(x => `<label><input type="checkbox" name="interests" value="${x}" ${d.interests.includes(x) ? 'checked' : ''}>${x}</label>`).join('')}</div></div>
     <div class="row2"><label class="field">Giai đoạn hiện tại<select id="ld-stage" name="stage">${opt(STG.map(s => [s[0], s[1]]), d.stage)}</select></label><label class="field">Phụ trách<select id="ld-owner" name="owner">${peopleOpts(d.owner)}</select></label></div>`;
@@ -272,7 +279,7 @@ function leadModal(){
 function leadCollect(){
   const f = document.querySelector('form[data-form="lead"]'); if (!f) return;
   const d = ui.lead.d, fd = new FormData(f);
-  ['name','phone','email','source','proj','addr','type','scale','stage','owner','concept','note'].forEach(k => { if (fd.has(k)) d[k] = fd.get(k); });
+  ['name','phone','email','source','proj','addr','dept','type','scale','stage','owner','concept','note'].forEach(k => { if (fd.has(k)) d[k] = fd.get(k); });
   if (fd.has('value')) d.value = +fd.get('value') || 0;
   if (f.querySelector('[name=interests]')) d.interests = fd.getAll('interests');
   const file = f.querySelector('[name=boqfile]'); if (file && file.files[0]) d.boq = file.files[0].name;
@@ -297,9 +304,33 @@ FORM.lead = () => {
 DEL.lead = id => { S.leads = S.leads.filter(l => l.id !== id); };
 
 /* ================= DỰ ÁN ================= */
-MOD.projects = () => {
-  const cur = sub('projects', 'list');
-  const tabs = subtabs('projects', [['list','Danh sách dự án'],['setup','Thiết lập thi công'],['detail','Chi tiết & luồng dữ liệu']], 'list');
+// Nhân sự tham gia dự án, theo phòng ban (thẻ luồng dữ liệu chỉ hiện người của phòng đó; Chat & Nhiệm vụ hiện tất cả).
+const PROJ_DEPTS = [['general','Ban chỉ huy công trường'],['kinh-doanh','Kinh doanh'],['qs','QS'],['qldth','Quản lý dự án (Tiến độ)'],['hr','HR / Chấm công'],['tai-chinh','Tài chính']];
+const deptLabel = k => (PROJ_DEPTS.find(d => d[0] === k) || [k, k])[1];
+function memberStack(p, dept, max = 3){
+  const ms = (p.members || []).filter(m => !dept || m.dept === dept);
+  const edit = perm('projects') === 'edit';
+  return `<span class="mstack">${ms.slice(0, max).map(m => `<span title="${esc(person(m.id).name)} · ${esc(m.role)} · ${esc(deptLabel(m.dept))}">${av(m.id, 26)}</span>`).join('')}${ms.length > max ? `<span class="av more">+${ms.length - max}</span>` : ''}${edit ? `<button class="av add" data-act="pm-members" data-id="${p.id}" data-dept="${dept || ''}" title="Thêm nhân sự${dept ? ' vào ' + esc(deptLabel(dept)) : ''}" aria-label="Thêm nhân sự">${ic('plus', 13)}</button>` : ''}${!ms.length && !edit ? '<span class="small muted">Chưa gán</span>' : ''}</span>`;
+}
+ACT['pm-members'] = (el, d, e) => { if (e) e.stopPropagation(); membersModal(d.id, d.dept); };
+function membersModal(pid, dept){
+  const p = proj(pid); p.members = p.members || [];
+  showModal(`<form class="modal" data-form="pm-member" data-id="${p.id}"><h3>Nhân sự tham gia — ${esc(p.name)}${closeBtn()}</h3>
+    <div class="stack" style="gap:6px">${p.members.map((m, i) => `<div class="li" style="padding:8px 10px;background:var(--hover)">${av(m.id, 30)}<span class="ell"><b>${esc(person(m.id).name)}</b><small>${esc(m.role)} · ${esc(deptLabel(m.dept))}</small></span><button type="button" class="icon-btn sm end" data-act="pm-member-del" data-id="${p.id}" data-i="${i}" aria-label="Bỏ khỏi dự án">${ic('x', 14)}</button></div>`).join('') || '<div class="empty" style="padding:12px">Chưa có nhân sự</div>'}</div>
+    <div class="row2"><label class="field">Nhân sự<select id="pmm-id" name="id" required>${peopleOpts('', '— Chọn người —')}</select></label><label class="field">Phòng ban trong dự án<select id="pmm-dept" name="dept">${opt(PROJ_DEPTS, dept || 'general')}</select></label></div>
+    <label class="field">Vai trò<input id="pmm-role" name="role" placeholder="VD: Kỹ sư, Đội thi công, Kế toán dự án…"></label>
+    <div class="m-actions"><button type="button" class="btn ghost" data-act="modal-close">Đóng</button><button class="btn" type="submit">${ic('plus', 14)}Thêm nhân sự</button></div></form>`);
+}
+FORM['pm-member'] = (v, f) => {
+  if (!v.id) return toast('Chọn người cần thêm');
+  const p = proj(f.dataset.id); p.members = p.members || [];
+  if (p.members.some(m => m.id === v.id && m.dept === v.dept)) return toast('Người này đã ở phòng ban đó');
+  p.members.push({id:v.id, role:v.role.trim() || 'Thành viên', dept:v.dept});
+  log(`Thêm ${person(v.id).name} vào ${p.name}`, 'blue'); render(); membersModal(p.id, v.dept);
+};
+ACT['pm-member-del'] = (el, d) => { const p = proj(d.id); const m = p.members.splice(+d.i, 1)[0]; log(`Bỏ ${person(m.id).name} khỏi ${p.name}`, 'blue'); render(); membersModal(p.id); };
+
+function projectsView(cur){
   let body = '';
   if (cur === 'list'){
     body = `<div class="stats">
@@ -308,13 +339,13 @@ MOD.projects = () => {
       ${stat('Bản nháp', S.projects.filter(p => p.status === 'draft').length, 'chờ thiết lập thi công')}
       ${stat('Tổng ngân sách quản lý', trd(sum(S.projects, p => p.budget)), '')}
     </div>
-    <div class="table-wrap"><table><thead><tr><th>Dự án</th><th>Khách hàng</th><th>Loại hình</th><th class="r">Ngân sách</th><th style="width:160px">Tiến độ</th><th>PM</th><th>Trạng thái</th></tr></thead><tbody>
-      ${S.projects.map(p => { const pr = projProgress(p); return `<tr class="click" data-act="open-proj" data-id="${p.id}" tabindex="0"><td class="b">${esc(p.name)}</td><td>${esc(p.client)}</td><td>${esc(p.type)}</td><td class="r">${trd(p.budget)}${p.status === 'draft' ? ' <span class="small muted">(dự kiến)</span>' : ''}</td><td><div class="row"><div style="flex:1">${bar(pr, 'var(--blue)')}</div><span class="small num">${pr}%</span></div></td><td>${p.pm ? av(p.pm, 24) : '<span class="small muted">Chưa gán</span>'}</td><td>${pill(...PSTATUS[p.status])}</td></tr>`; }).join('')}
+    <div class="table-wrap"><table><thead><tr><th>Dự án</th><th>Khách hàng</th><th>Loại hình</th><th class="r">Ngân sách</th><th style="width:160px">Tiến độ</th><th>Nhân sự</th><th>Trạng thái</th></tr></thead><tbody>
+      ${S.projects.map(p => { const pr = projProgress(p); return `<tr class="click" data-act="open-proj" data-id="${p.id}" tabindex="0"><td class="b">${esc(p.name)}</td><td>${esc(p.client)}</td><td>${esc(p.type)}</td><td class="r">${trd(p.budget)}${p.status === 'draft' ? ' <span class="small muted">(dự kiến)</span>' : ''}</td><td><div class="row"><div style="flex:1">${bar(pr, 'var(--blue)')}</div><span class="small num">${pr}%</span></div></td><td>${memberStack(p)}</td><td>${pill(...PSTATUS[p.status])}</td></tr>`; }).join('')}
     </tbody></table></div>`;
   } else if (cur === 'setup'){
     const cand = S.projects.filter(p => p.status !== 'done');
     const p = proj(ui.setupPid) || cand.find(x => x.status === 'draft') || cand[0];
-    if (!p) return head('Dự án', '') + tabs + emptyBox('Chưa có dự án cần thiết lập', 'Dự án được tạo khi cơ hội bên Kinh doanh chuyển sang cột “Dự án (Thiết kế)” hoặc “Dự án (Thi công)”.', `<button class="btn" data-act="nav" data-v="sales" data-sub="kanban">Mở Kinh doanh</button>`);
+    if (!p) return emptyBox('Chưa có dự án cần thiết lập', 'Dự án được tạo khi cơ hội bên Kinh doanh chuyển sang cột “Dự án (Thiết kế)” hoặc “Dự án (Thi công)”.', `<button class="btn" data-act="nav" data-v="sales" data-sub="kanban">Mở Kinh doanh</button>`);
     const ex = {qs:S.qs.projects.some(q => q.pid === p.id), g:!!S.gantt[p.id], site:S.att.sites.some(s => s.pid === p.id), fin:!!S.fin[p.id], chat:S.convs.some(c => c.pid === p.id)};
     const ck = (ok, name, what) => `<div><span class="sq" style="--c:${ok ? 'var(--green)' : 'var(--muted)'};--t:${ok ? 'var(--green-t)' : 'var(--chip)'};width:26px;height:26px;border-radius:8px">${ic(ok ? 'check' : 'plus', 14)}</span><b style="font-weight:500">${name}</b><small>${ok ? 'Đã có' : what}</small></div>`;
     body = `<div class="card pad small" style="background:var(--hover)">Việc tạo hồ sơ khách hàng mới thuộc mục <button class="link" data-act="nav" data-v="sales" style="text-decoration:underline">Kinh doanh</button>. Khi một cơ hội chuyển vào cột “Dự án (Thiết kế)” hoặc “Dự án (Thi công)”, dự án tự xuất hiện ở đây để bạn bổ nhiệm nhân sự và khởi tạo dữ liệu vận hành.</div>
@@ -330,19 +361,19 @@ MOD.projects = () => {
       <label class="field">Ghi chú bàn giao từ Kinh doanh<textarea id="st-note" name="note">${esc(p.note)}</textarea></label>
       <div class="field">Sau khi lưu, dữ liệu vận hành được khởi tạo tới — không cần nhập lại thông tin khách hàng hay địa điểm ở từng module:
         <div class="checklist">${ck(ex.qs,'QS','Tạo hồ sơ bóc tách trống')}${ck(ex.g,'Tiến độ','Khung Gantt mẫu theo loại hình ' + p.type)}${ck(ex.site,'Chấm công','Địa điểm công trường từ địa chỉ')}${ck(ex.fin,'Tài chính','Ngân sách theo hạng mục dự kiến')}${ck(S.quest.pid === p.id,'Nhiệm vụ','Gán quy trình game hoá theo loại hình')}${ck(ex.chat,'Chat','Tạo nhóm chat dự án tự động')}</div></div>
-      <div class="m-actions"><button type="button" class="btn ghost" data-act="sub" data-view="projects" data-k="list">Huỷ</button><button class="btn" type="submit">${ic('check', 15)}Lưu thiết lập & bắt đầu thi công</button></div>
+      <div class="m-actions"><button type="button" class="btn ghost" data-act="sub" data-view="pm" data-k="list">Huỷ</button><button class="btn" type="submit">${ic('check', 15)}Lưu thiết lập & bắt đầu thi công</button></div>
     </form>`;
   } else {
     const p = proj(S.pid) || S.projects[0];
-    if (!p) return head('Dự án', '') + tabs + emptyBox('Chưa có dự án', 'Hồ sơ dự án tự tạo từ Kinh doanh.', `<button class="btn" data-act="nav" data-v="sales" data-sub="kanban">Mở Kinh doanh</button>`);
+    if (!p) return emptyBox('Chưa có dự án', 'Hồ sơ dự án tự tạo từ Kinh doanh.', `<button class="btn" data-act="nav" data-v="sales" data-sub="kanban">Mở Kinh doanh</button>`);
     const lead = S.leads.find(l => l.id === p.leadId);
     const g = S.gantt[p.id] ? ganttStats(p.id) : null;
     const qsp = S.qs.projects.filter(q => q.pid === p.id);
     const site = S.att.sites.find(s => s.pid === p.id);
     const f = S.fin[p.id] ? finStats(p.id) : null;
     const conv = S.convs.find(c => c.pid === p.id);
-    const card = (icon, c, title, big, small, v, subk) => `<div class="card flow-card"><div class="row"><span class="sq" style="--c:${cv(c)};--t:${ct(c)}">${ic(icon, 17)}</span><b style="font-size:13.5px;font-weight:600">${title}</b></div><b>${big}</b><span class="small muted">${small}</span>${v ? `<button class="link" style="align-self:flex-start" data-act="flow-go" data-v="${v}" data-sub="${subk || ''}" data-pid="${p.id}">Mở ${title} ›</button>` : ''}</div>`;
-    body = `<div class="toolbar"><label class="field" style="flex-direction:row;align-items:center;gap:10px">Dự án<select data-change="pid" style="min-width:260px">${opt(S.projects.map(x => [x.id, x.name]), p.id)}</select></label></div>
+    const card = (icon, c, title, big, small, v, subk, dept) => `<div class="card flow-card"><div class="row"><span class="sq" style="--c:${cv(c)};--t:${ct(c)}">${ic(icon, 17)}</span><b style="font-size:13.5px;font-weight:600">${title}</b></div><b>${big}</b><span class="small muted">${small}</span><div class="row between" style="margin-top:auto">${dept !== undefined ? memberStack(p, dept, 4) : '<span></span>'}${v ? `<button class="link" data-act="flow-go" data-v="${v}" data-sub="${subk || ''}" data-pid="${p.id}">Mở ${title} ›</button>` : ''}</div></div>`;
+    body = `<div class="toolbar"><label class="field" style="flex-direction:row;align-items:center;gap:10px">Chuyển qua dự án khác<select data-change="pid" style="min-width:260px">${opt(S.projects.map(x => [x.id, x.name]), p.id)}</select></label></div>
       <div class="card pad stack">
         <div class="row between" style="flex-wrap:wrap"><div><h2 style="margin:0;font-size:19px">${esc(p.name)}</h2><div class="small muted">${esc(p.addr)}${p.start ? ' · Khởi công ' + fmtFull(p.start) : ''}</div></div><div class="row">${pill(...PSTATUS[p.status])}${p.status === 'draft' ? `<button class="btn sm" data-act="setup-go" data-id="${p.id}">Thiết lập thi công</button>` : ''}</div></div>
         <div class="stats" style="margin-top:6px">
@@ -350,26 +381,27 @@ MOD.projects = () => {
           <div><div class="small muted">Liên hệ</div><b style="font-weight:500">${esc(p.contact)}</b><div class="small">${esc(p.phone)} · ${esc(p.email)}</div></div>
           <div><div class="small muted">Ngân sách · PM</div><b style="font-weight:600;font-size:18px">${trd(p.budget)}</b><div class="small">${p.pm ? esc(person(p.pm).name) : 'Chưa gán PM'}</div></div>
         </div>
+        <div class="row" style="flex-wrap:wrap;border-top:1px solid var(--line);padding-top:12px"><span class="small muted">Nhân sự tham gia:</span>${memberStack(p, '', 8)}<span class="small muted">${(p.members || []).length} người</span></div>
       </div>
       <h2 class="sec-title" style="margin:0">Luồng phân phối dữ liệu từ dự án</h2>
       <div class="flow">
-        ${card('briefcase','orange','Kinh doanh', lead ? ty(lead.value) : '—', lead ? 'Giai đoạn: ' + stg(lead.stage)[1] : 'Không gắn cơ hội', 'sales', 'kanban')}
-        ${card('ruler','purple','QS', qsp.length + ' hồ sơ', qsp.length ? vnd(sum(qsp, q => qsTotal(q))) + ' đã bóc tách' : 'Chưa có hồ sơ bóc tách', 'qs', 'projects')}
-        ${card('gantt','blue','Quản lý dự án', g ? g.actual + '%' : '—', g ? g.count + ' công việc · ' + g.late + ' trễ' : 'Chưa có khung tiến độ', g ? 'pm' : '', '')}
-        ${card('userclock','green','Chấm công', site ? site.present + '/' + site.cap : '—', site ? esc(site.name) : 'Chưa có địa điểm', site ? 'att' : '', '')}
-        ${card('wallet','yellow','Tài chính', f ? 'Chi ' + trd(f.spent) + ' / ' + trd(f.budget) : '—', f ? f.overdue.length + ' hoá đơn quá hạn' : 'Chưa có ngân sách', f ? 'fin' : '', '')}
-        ${card('chat','pink','Chat', conv ? (conv.members.length + ' thành viên') : '—', conv ? esc(conv.name) : 'Chưa có nhóm chat', conv ? 'chat' : '', conv ? conv.id : '')}
-        ${card('trophy','brown','Nhiệm vụ', S.quest.pid === p.id ? questDone() + '/' + S.quest.steps.length + ' bước' : 'Chưa gán riêng', S.quest.pid === p.id ? esc(S.quest.name) : 'Mẫu: ' + esc(S.quest.name), 'pm', 'quest')}
+        ${card('briefcase','orange','Kinh doanh', lead ? ty(lead.value) : '—', lead ? 'Giai đoạn: ' + stg(lead.stage)[1] : 'Không gắn cơ hội', 'sales', 'kanban', 'kinh-doanh')}
+        ${card('ruler','purple','QS', qsp.length + ' hồ sơ', qsp.length ? vnd(sum(qsp, q => qsTotal(q))) + ' đã bóc tách' : 'Chưa có hồ sơ bóc tách', 'qs', 'projects', 'qs')}
+        ${card('gantt','blue','Thi công', g ? g.actual + '%' : '—', g ? g.count + ' công việc · ' + g.late + ' trễ' : 'Chưa có khung tiến độ', g ? 'pm' : '', 'gantt', 'qldth')}
+        ${card('userclock','green','HR / Chấm công', site ? site.present + '/' + site.cap : '—', site ? esc(site.name) : 'Chưa có địa điểm', site ? 'att' : '', '', 'hr')}
+        ${card('wallet','yellow','Tài chính', f ? 'Chi ' + trd(f.spent) + ' / ' + trd(f.budget) : '—', f ? f.overdue.length + ' hoá đơn quá hạn' : 'Chưa có ngân sách', f ? 'fin' : '', '', 'tai-chinh')}
+        ${card('chat','pink','Chat', conv ? (conv.members.length + ' thành viên') : '—', conv ? esc(conv.name) : 'Chưa có nhóm chat', conv ? 'chat' : '', conv ? conv.id : '', '')}
+        ${card('trophy','brown','Nhiệm vụ', S.quest.pid === p.id ? questDone() + '/' + S.quest.steps.length + ' bước · ' + num(questPts()[0]) + '/' + num(questPts()[1]) + ' điểm' : 'Chưa gán riêng', S.quest.pid === p.id ? esc(S.quest.name) : 'Mẫu: ' + esc(S.quest.name), 'pm', 'quest', '')}
       </div>`;
   }
-  return head('Dự án', 'Điểm khởi đầu — dữ liệu dự án được phân phối tới QS, Tiến độ, Chấm công, Tài chính & Nhiệm vụ.', `<button class="btn" data-act="nav" data-v="sales" data-sub="kanban">${ic('plus', 15)}Thêm cơ hội mới (Kinh doanh)</button>`) + tabs + body;
-};
+  return body;
+}
 CHG['setup-pid'] = el => { ui.setupPid = el.value; render(); };
-ACT['setup-go'] = (el, d) => { ui.setupPid = d.id; S.sub.projects = 'setup'; render(); };
+ACT['setup-go'] = (el, d) => { ui.setupPid = d.id; S.sub.pm = 'setup'; render(); };
 ACT['flow-go'] = (el, d) => {
   S.pid = d.pid;
   if (d.v === 'chat' && d.sub){ S.cv = d.sub; nav('chat'); return; }
-  if (d.v === 'pm' && d.sub === 'quest'){ S.sub.pm = 'quest'; nav('pm'); return; }
+  if (d.v === 'pm'){ S.sub.pm = d.sub || 'gantt'; nav('pm'); return; }
   if (d.v === 'qs'){ const q = S.qs.projects.find(x => x.pid === d.pid); if (q) S.qs.cur = q.id; }
   nav(d.v, d.sub || undefined);
 };
@@ -386,9 +418,9 @@ FORM.setup = (v, f) => {
   const lead = S.leads.find(l => l.id === p.leadId); if (lead && lead.stage !== 'build'){ lead.stage = 'build'; lead.updated = todayISO(); }
   botPost('Dự án bắt đầu thi công', `${p.name} đã được thiết lập: PM ${p.pm ? person(p.pm).name : 'chưa gán'}, khởi công ${fmtFull(p.start)}. Đã khởi tạo QS, tiến độ, chấm công, tài chính và nhóm chat.`, 'green', 'Module Dự án', 'projects', 'detail', 'g-' + p.id);
   log('Thiết lập thi công ' + p.name, 'blue');
-  S.pid = p.id; S.sub.projects = 'detail'; render(); toast('Đã lưu thiết lập & khởi tạo dữ liệu vận hành');
+  S.pid = p.id; S.sub.pm = 'detail'; render(); toast('Đã lưu thiết lập & khởi tạo dữ liệu vận hành');
 };
-SEARCH.push(hit => S.projects.filter(p => hit(p.name + ' ' + p.client)).map(p => ({icon:'building', label:p.name, sub:'Dự án', run:() => { S.pid = p.id; S.sub.projects = 'detail'; nav('projects'); }})));
+SEARCH.push(hit => S.projects.filter(p => hit(p.name + ' ' + p.client)).map(p => ({icon:'building', label:p.name, sub:'Dự án', run:() => { S.pid = p.id; S.sub.pm = 'detail'; nav('projects'); }})));
 SEARCH.push(hit => S.leads.filter(l => hit(l.name + ' ' + l.proj + ' ' + l.phone)).map(l => ({icon:'briefcase', label:l.name + ' — ' + l.proj, sub:'Khách hàng · ' + stg(l.stage)[1], run:() => { nav('sales'); ACT.lead(null, {id:l.id}); }})));
 
 /* ================= CHAT ================= */

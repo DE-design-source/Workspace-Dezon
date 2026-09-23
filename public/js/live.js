@@ -18,26 +18,37 @@ const SYNC = [
   ['wiki_pages', 'array', () => S.wiki.pages, v => S.wiki.pages = v],
   ['wiki_cats', 'single', () => ({cats:S.wiki.cats}), v => S.wiki.cats = v.cats],
   ['activity', 'single', () => ({list:S.activity}), v => S.activity = v.list || []],
-  ['apps', 'single', () => ({list:S.apps}), v => S.apps = v.list || []]
+  ['apps', 'single', () => ({list:S.apps}), v => S.apps = v.list || []],
+  ['quest_sales', 'single', () => S.quest_sales, v => S.quest_sales = v],
+  ['quest_mkt', 'single', () => S.quest_mkt, v => S.quest_mkt = v],
+  ['mkt_catalog', 'array', () => S.mkt.catalog, v => S.mkt.catalog = v],
+  ['mkt_campaigns', 'array', () => S.mkt.campaigns, v => S.mkt.campaigns = v],
+  ['hr_staff', 'array', () => S.hr.staff, v => S.hr.staff = v],
+  ['hr_pay', 'single', () => ({paid:S.hr.paid || {}}), v => S.hr.paid = v.paid || {}],
+  ['settings', 'single', () => S.settings, v => S.settings = v]
 ];
 // Mẫu vai trò: áp nhanh rồi chỉnh riêng từng module.
 const ROLES = {
   admin:{label:'Quản trị viên', admin:true},
-  director:{label:'Ban giám đốc', perms:{sales:'edit', projects:'edit', pm:'edit', att:'edit', fin:'edit', qs:'edit', wiki:'edit', apps:'edit'}},
-  pm:{label:'Quản lý dự án', perms:{sales:'view', projects:'edit', pm:'edit', att:'edit', fin:'view', qs:'edit', wiki:'edit', apps:'view'}},
-  sales:{label:'Kinh doanh', perms:{sales:'edit', projects:'view', pm:'view', att:'none', fin:'none', qs:'view', wiki:'view', apps:'view'}},
-  accountant:{label:'Kế toán', perms:{sales:'view', projects:'view', pm:'view', att:'view', fin:'edit', qs:'view', wiki:'view', apps:'none'}},
-  qs:{label:'QS / Dự toán', perms:{sales:'view', projects:'view', pm:'view', att:'none', fin:'none', qs:'edit', wiki:'view', apps:'view'}},
-  site:{label:'Kỹ thuật / Công trường', perms:{sales:'none', projects:'view', pm:'edit', att:'edit', fin:'none', qs:'view', wiki:'view', apps:'view'}},
-  hr:{label:'Nhân sự', perms:{sales:'none', projects:'view', pm:'view', att:'edit', fin:'none', qs:'none', wiki:'edit', apps:'none'}},
-  staff:{label:'Nhân viên', perms:{sales:'none', projects:'none', pm:'view', att:'none', fin:'none', qs:'none', wiki:'view', apps:'view'}},
+  director:{label:'Ban giám đốc', perms:{mkt:'edit', sales:'edit', projects:'edit', pm:'edit', att:'edit', hr:'edit', fin:'edit', qs:'edit', po:'edit', wiki:'edit', apps:'edit'}},
+  pm:{label:'Quản lý dự án', perms:{mkt:'none', sales:'view', projects:'edit', pm:'edit', att:'edit', hr:'none', fin:'view', qs:'edit', po:'edit', wiki:'edit', apps:'view'}},
+  marketing:{label:'Marketing', perms:{mkt:'edit', sales:'view', projects:'view', pm:'none', att:'none', hr:'none', fin:'none', qs:'none', po:'none', wiki:'view', apps:'view'}},
+  sales:{label:'Kinh doanh', perms:{mkt:'view', sales:'edit', projects:'view', pm:'view', att:'none', hr:'none', fin:'none', qs:'view', po:'none', wiki:'view', apps:'view'}},
+  accountant:{label:'Kế toán', perms:{mkt:'view', sales:'view', projects:'view', pm:'view', att:'view', hr:'view', fin:'edit', qs:'view', po:'view', wiki:'view', apps:'none'}},
+  qs:{label:'QS / Dự toán', perms:{mkt:'none', sales:'view', projects:'view', pm:'view', att:'none', hr:'none', fin:'none', qs:'edit', po:'edit', wiki:'view', apps:'view'}},
+  site:{label:'Kỹ thuật / Công trường', perms:{mkt:'none', sales:'none', projects:'view', pm:'edit', att:'edit', hr:'none', fin:'none', qs:'view', po:'view', wiki:'view', apps:'view'}},
+  hr:{label:'Nhân sự', perms:{mkt:'none', sales:'none', projects:'view', pm:'view', att:'edit', hr:'edit', fin:'none', qs:'none', po:'none', wiki:'edit', apps:'none'}},
+  staff:{label:'Nhân viên', perms:{mkt:'none', sales:'none', projects:'none', pm:'view', att:'none', hr:'none', fin:'none', qs:'none', po:'none', wiki:'view', apps:'view'}},
   custom:{label:'Tuỳ chỉnh'}
 };
 const LEVELS = [['none','Không'],['view','Xem'],['edit','Sửa']];
 // Giống hàm can_read_record / can_write_record trong migration-002 (máy chủ mới là nơi chặn thật).
 function colRead(col, P){
-  if (['activity','people','wiki_cats','qs_settings','apps'].includes(col)) return true;
-  if (col === 'leads') return P('sales') !== 'none';
+  if (['activity','people','wiki_cats','qs_settings','apps','settings'].includes(col)) return true;
+  if (col === 'leads' || col === 'quest_sales') return P('sales') !== 'none';
+  if (col === 'quest_mkt' || col.startsWith('mkt_')) return P('mkt') !== 'none';
+  if (col.startsWith('hr_')) return P('hr') !== 'none';
+  if (col === 'qs_po') return P('po') !== 'none' || P('qs') !== 'none';
   if (col === 'projects') return ['projects','pm','fin','att','qs','sales'].some(m => P(m) !== 'none');
   if (col === 'gantt' || col === 'quest') return P('pm') !== 'none';
   if (col === 'att') return P('att') !== 'none';
@@ -50,13 +61,17 @@ function colWrite(col, P){
   const e = m => P(m) === 'edit';
   switch (col){
     case 'activity': return true;
-    case 'people': return e('att') || e('projects') || e('pm');
-    case 'leads': return e('sales');
+    case 'people': return e('att') || e('projects') || e('pm') || e('hr');
+    case 'leads': case 'quest_sales': return e('sales');
+    case 'quest_mkt': case 'mkt_catalog': case 'mkt_campaigns': return e('mkt');
+    case 'hr_staff': case 'hr_pay': return e('hr');
+    case 'qs_po': return e('po') || e('qs');
+    case 'settings': return !!(LIVE && LIVE.isAdmin);
     case 'projects': return e('projects') || e('sales');
     case 'gantt': return e('pm') || e('projects');
     case 'quest': return e('pm');
     case 'att': return e('att') || e('projects');
-    case 'fin': return e('fin') || e('projects');
+    case 'fin': return e('fin') || e('projects') || e('po');
     case 'qs_projects': return e('qs') || e('projects');
     case 'apps': return e('apps');
   }
@@ -70,6 +85,9 @@ function blankState(){
   Object.assign(s0, {projects:[], leads:[], people:[], gantt:{}, fin:{}, activity:[]});
   s0.att = {sites:[], rec:[], approvals:[], week:[], mine:{p:'', site:'', in:null, out:null, task:'', weekMin:0, hist:[]}};
   s0.qs.projects = []; s0.qs.po = [];
+  const blankQ = q => ({...q, pid:'', player:'', pts:{}, redeems:[], base:0, steps:q.steps.map(st => ({...st, tasks:st.tasks.map(t => ({...t, done:false, by:'', date:''}))}))});
+  s0.quest_sales = blankQ(s0.quest_sales); s0.quest_mkt = blankQ(s0.quest_mkt);
+  s0.mkt.campaigns = []; s0.hr = {staff:[], paid:{}};
   s0.quest = {...s0.quest, pid:'', player:'', streak:0, lastSafety:'', pts:{}, redeems:[], base:0, steps:s0.quest.steps.map(st => ({...st, tasks:st.tasks.map(t => ({...t, done:false, by:'', date:''}))}))};
   return s0;
 }
@@ -196,7 +214,6 @@ async function liveBoot(){
   }
   function enter(){
     shell.hidden = true; L.ready = true;
-    if (L.isAdmin){ VIEWS.admin = {label:'Tài khoản', icon:'users', group:'Vận hành'}; }
     subscribe();
     render(); renderAi(); updateTitle();
     let seen = false; try { seen = !!localStorage.getItem('sf-welcome-' + L.uid); } catch (e) {}
@@ -255,6 +272,7 @@ async function liveBoot(){
       rows.forEach(r => L.snap[col][r.id] = stable(r.data));
       if (!L.hasData) return;
       if (!colRead(col, L.perm)) return;                                         // không có quyền đọc: giữ trống
+      if (!rows.length) return;                                                  // chưa có trên máy chủ: dùng mặc định trống (danh mục mẫu sẽ tự lưu lên)
       if (kind === 'array') set(rows.map(r => r.data));                          // kể cả rỗng: không để lọt dữ liệu mẫu
       else if (kind === 'map') set(Object.fromEntries(rows.map(r => [r.id, r.data])));
       else if (rows[0]) set(rows[0].data);

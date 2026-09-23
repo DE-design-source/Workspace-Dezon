@@ -84,21 +84,27 @@ const IC = {
   bulb:'<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2V17h5v-1.1c0-.8.4-1.5 1-2A6 6 0 0 0 12 3z"/>',
   clip:'<path d="m21 11-8.5 8.5a5 5 0 0 1-7-7L14 4a3.5 3.5 0 0 1 5 5l-8.5 8.5a2 2 0 0 1-3-3L15 7"/>',
   external:'<path d="M14 4h6v6M20 4l-9 9"/><path d="M18 14v4.5a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 4 18.5v-11A1.5 1.5 0 0 1 5.5 6H10"/>',
+  megaphone:'<path d="M3 10v4a1 1 0 0 0 1 1h3l5 4V5L7 9H4a1 1 0 0 0-1 1z"/><path d="M16 8.5a5 5 0 0 1 0 7M19 5.5a9 9 0 0 1 0 13"/>',
+  gear:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',
+  sidebar:'<rect x="3" y="4" width="18" height="16" rx="3"/><path d="M9 4v16"/>',
   hardhat:'<path d="M3 18h18v-2a9 9 0 0 0-18 0zM10 7v6M14 7v6M10 7a2 2 0 0 1 4 0"/>'
 };
 const ic = (n, s = 18) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[n] || ''}</svg>`;
 
 /* ============ đăng ký module ============ */
+// mods: quyền cần có (một trong số đó) để thấy mục; cur(): quyền áp cho tab đang mở (dải "Chỉ xem").
 const VIEWS = {
   dash:{label:'Tổng quan', icon:'grid', group:'Menu'},
-  sales:{label:'Kinh doanh', icon:'briefcase', group:'Menu'},
-  projects:{label:'Dự án', icon:'building', group:'Menu'},
+  mkt:{label:'Marketing', icon:'megaphone', group:'Menu', mods:['mkt']},
+  sales:{label:'Kinh doanh', icon:'briefcase', group:'Menu', mods:['sales']},
   chat:{label:'Chat', icon:'chat', group:'Menu'},
-  pm:{label:'Quản lý dự án', icon:'gantt', group:'Vận hành', scoped:true},
-  att:{label:'Chấm công', icon:'userclock', group:'Vận hành'},
-  fin:{label:'Tài chính', icon:'wallet', group:'Vận hành', scoped:true},
-  qs:{label:'QS', icon:'ruler', group:'Vận hành'},
-  wiki:{label:'Wiki', icon:'book', group:'Vận hành'}
+  pm:{label:'Quản lý dự án', icon:'gantt', group:'Menu', scoped:true, mods:['projects','pm'], cur:() => ['gantt','quest'].includes(S.sub.pm) ? 'pm' : 'projects'},
+  att:{label:'HR', icon:'userclock', group:'Menu', mods:['att','hr'], cur:() => (S.sub.hr || 'cc') === 'cc' ? 'att' : 'hr'},
+  fin:{label:'Tài chính', icon:'wallet', group:'Menu', scoped:true, mods:['fin']},
+  qs:{label:'QS', icon:'ruler', group:'Menu', mods:['qs']},
+  po:{label:'Mua hàng', icon:'cart', group:'Menu', mods:['po']},
+  wiki:{label:'Wiki', icon:'book', group:'Khác', mods:['wiki']},
+  settings:{label:'Cài đặt', icon:'gear', group:'Khác'}
 };
 /* Ứng dụng web nhúng (giống mục ứng dụng trong Lark): mở ngay trong workspace bằng khung riêng. */
 const DEFAULT_APPS = [{id:'qspro', name:'QS Pro', desc:'Dự toán & bóc tách chuyên nghiệp', url:'https://qs-pro-srgx.onrender.com/', icon:'ruler', c:'orange'}];
@@ -112,14 +118,26 @@ function vinfo(v){
 // LIVE = kết nối Supabase (live.js gán khi đăng nhập); null = chế độ demo dữ liệu mẫu trong trình duyệt.
 let LIVE = null;
 // Phân quyền theo module: none | view | edit. Demo = toàn quyền.
-const PERM_MODS = [['sales','Kinh doanh','Pipeline khách hàng, cơ hội, hồ sơ khách'],['projects','Dự án','Hồ sơ dự án, thiết lập thi công'],['pm','Quản lý dự án','Tiến độ Gantt, nhiệm vụ & điểm thưởng'],['att','Chấm công','Chấm công, duyệt ngoài vùng'],['fin','Tài chính','Ngân sách, hoá đơn, công nợ, dòng tiền'],['qs','QS','Bóc tách, báo giá, mua hàng'],['wiki','Wiki','Sổ tay, nội quy, quy trình'],['apps','Ứng dụng','QS Pro & các link web nhúng']];
+const PERM_MODS = [
+  ['mkt','Marketing','Chiến dịch, danh mục chi phí, báo giá marketing'],
+  ['sales','Kinh doanh','Pipeline khách hàng, cơ hội, hồ sơ khách'],
+  ['projects','Dự án','Danh sách, thiết lập thi công, luồng dữ liệu'],
+  ['pm','Tiến độ & nhiệm vụ','Gantt, mốc, nhiệm vụ & điểm thưởng thi công'],
+  ['att','Chấm công','Chấm công theo công trường, duyệt ngoài vùng'],
+  ['hr','Hồ sơ & lương','Hồ sơ nhân sự, bảng lương'],
+  ['fin','Tài chính','Ngân sách, hoá đơn, công nợ, dòng tiền'],
+  ['qs','QS','Bóc tách, báo giá, danh mục sản phẩm'],
+  ['po','Mua hàng','Đơn mua hàng, nhà cung cấp, duyệt đơn'],
+  ['wiki','Wiki','Sổ tay, nội quy, quy trình'],
+  ['apps','Ứng dụng','QS Pro & các link web nhúng']];
 const perm = mod => LIVE && LIVE.perm ? LIVE.perm(mod) : 'edit';
 function canSee(v){
-  if (v === 'dash' || v === 'chat') return true;
   if (v === 'admin') return !!(LIVE && LIVE.isAdmin);
   if (isApp(v)) return perm('apps') !== 'none';
-  return !PERM_MODS.some(m => m[0] === v) || perm(v) !== 'none';
+  const mods = (VIEWS[v] || {}).mods;
+  return !mods || mods.some(m => perm(m) !== 'none');
 }
+const viewPerm = v => { const x = VIEWS[v]; return x && x.mods ? perm(x.cur ? x.cur() : x.mods[0]) : 'edit'; };
 const MOD = {}, AFTER = {}, ACT = {}, FORM = {}, INP = {}, CHG = {}, DROP = {}, DEL = {};
 const SEEDS = [], SEARCH = [], AI = [], AI_CHIPS = [], AI_SUGG = [];
 
@@ -128,7 +146,7 @@ const KEY = 'siteflow-workspace-v1';
 let S;
 const ui = {notif:false, palItems:[]};
 function seed(){
-  const s = {v:1, view:'dash', tabs:['dash','sales','projects','chat','pm','app-qspro'], apps:JSON.parse(JSON.stringify(DEFAULT_APPS)), pid:'riverside', sub:{}, ai:[], activity:[], seenAct:0, me:'ta',
+  const s = {v:1, view:'dash', tabs:['dash','mkt','sales','chat','pm','app-qspro'], apps:JSON.parse(JSON.stringify(DEFAULT_APPS)), pid:'riverside', sub:{}, ai:[], activity:[], seenAct:0, me:'ta',
     people:[
       {id:'ta', name:'Trần Anh', role:'Quản lý dự án', team:'Văn phòng', c:'purple'},
       {id:'da', name:'Nguyễn Đức Anh', role:'Chỉ huy trưởng', team:'Ban chỉ huy', c:'blue'},
@@ -157,8 +175,12 @@ function seed(){
 function load(){
   try { S = JSON.parse(localStorage.getItem(KEY)); } catch (e) { S = null; }
   if (!S || S.v !== 1) S = seed();
+  // dữ liệu demo cũ: bổ sung phần mới (Marketing, HR, Cài đặt…) từ dữ liệu mẫu
+  const base = seed();
+  Object.keys(base).forEach(k => { if (S[k] === undefined) S[k] = base[k]; });
+  base.people.forEach(p => { if (!S.people.some(x => x.id === p.id)) S.people.push(p); });
   if (!S.apps) S.apps = JSON.parse(JSON.stringify(DEFAULT_APPS));
-  S.tabs = S.tabs.filter(vinfo);
+  S.tabs = [...new Set(S.tabs.map(t => t === 'projects' ? 'pm' : t))].filter(vinfo);
 }
 function save(){
   if (LIVE){ LIVE.saveUi(); LIVE.sync(); return; }
@@ -245,24 +267,24 @@ const legend = items => `<div class="legend">${items.map(([c, l, shape]) => `<sp
 
 /* ============ khung ============ */
 function renderRail(){
-  let html = `<div class="logo" title="Dezon Workspace"><img src="/img/logo.png" alt="Dezon" width="40" height="40"></div>`;
-  let grp = '';
-  Object.entries(VIEWS).forEach(([k, v]) => {
-    if (!canSee(k)) return;
-    if (v.group !== grp){ grp = v.group; html += `<div class="rail-label">${grp}</div>`; }
-    const badge = k === 'chat' && typeof chatUnreadTotal === 'function' && chatUnreadTotal() ? '<span class="badge"></span>'
-      : k === 'att' && typeof attPending === 'function' && attPending().length ? '<span class="badge"></span>' : '';
-    html += `<button class="rail-btn ${S.view === k ? 'on' : ''}" data-act="nav" data-v="${k}" title="${v.label}" aria-label="${v.label}">${ic(v.icon, 19)}${badge}</button>`;
-  });
-  if (perm('apps') !== 'none') html += `<div class="rail-label">Ứng dụng</div>`;
-  if (perm('apps') !== 'none') S.apps.forEach(a => { const v = 'app-' + a.id; html += `<button class="rail-btn app ${S.view === v ? 'on' : ''}" data-act="nav" data-v="${v}" title="${esc(a.name)} — ${esc(a.desc || a.url)}" aria-label="${esc(a.name)}" style="--c:${cv(a.c)};--t:${ct(a.c)}">${ic(a.icon, 19)}</button>`; });
-  if (perm('apps') === 'edit') html += `<button class="rail-btn extra" data-act="app-new" title="Thêm ứng dụng web" aria-label="Thêm ứng dụng web">${ic('plus', 19)}</button>`;
-  html += `<div class="rail-label extra">Cài đặt</div>
-    <button class="rail-btn extra" data-act="palette" title="Tìm nhanh (Ctrl K)" aria-label="Tìm nhanh">${ic('search', 19)}</button>
-    <button class="rail-btn extra" data-act="theme" title="Đổi giao diện sáng / tối" aria-label="Đổi giao diện sáng tối">${ic('moon', 19)}</button>
-    ${LIVE ? '' : `<button class="rail-btn extra" data-act="reset" title="Khôi phục dữ liệu mẫu" aria-label="Khôi phục dữ liệu mẫu">${ic('reset', 19)}</button>`}
-    <div class="spacer"></div>
-    <button class="me" data-act="me" title="${esc(person(S.me).name)} — ${LIVE ? 'Hồ sơ & mật khẩu' : 'chế độ demo'}" style="background:${cv(person(S.me).c || 'purple')}">${initials(person(S.me).name)}</button>`;
+  const btn = (k, v, extra = '') => `<button class="rail-btn ${S.view === k ? 'on' : ''}" data-act="nav" data-v="${k}" title="${esc(v.label)}" aria-label="${esc(v.label)}" ${extra}>${ic(v.icon, 19)}<span class="rl">${esc(v.label)}</span>${v.badge ? '<span class="badge"></span>' : ''}</button>`;
+  const withBadge = (k, v) => ({...v, badge:(k === 'chat' && typeof chatUnreadTotal === 'function' && chatUnreadTotal()) || (k === 'att' && typeof attPending === 'function' && attPending().length) || (k === 'po' && typeof poPending === 'function' && poPending())});
+  const entries = Object.entries(VIEWS).filter(([k]) => canSee(k));
+  let html = `<div class="rail-top"><div class="logo" title="Dezon Workspace"><img src="/img/logo.png" alt="Dezon" width="40" height="40"></div><span class="rl brand">Dezon<small>Workspace</small></span></div>
+    <div class="rail-label">Menu</div>`;
+  entries.filter(([, v]) => v.group === 'Menu').forEach(([k, v]) => html += btn(k, withBadge(k, v)));
+  if (perm('apps') !== 'none'){
+    html += `<div class="rail-label">Ứng dụng</div>`;
+    S.apps.forEach(a => { const v = 'app-' + a.id; html += `<button class="rail-btn app ${S.view === v ? 'on' : ''}" data-act="nav" data-v="${v}" title="${esc(a.name)} — ${esc(a.desc || a.url)}" aria-label="${esc(a.name)}" style="--c:${cv(a.c)};--t:${ct(a.c)}">${ic(a.icon, 19)}<span class="rl">${esc(a.name)}</span></button>`; });
+    if (perm('apps') === 'edit') html += `<button class="rail-btn extra" data-act="app-new" title="Thêm ứng dụng web" aria-label="Thêm ứng dụng web">${ic('plus', 19)}<span class="rl">Thêm ứng dụng</span></button>`;
+  }
+  html += `<div class="spacer"></div><div class="rail-sep"></div>`;
+  entries.filter(([, v]) => v.group === 'Khác').forEach(([k, v]) => html += btn(k, v));
+  html += `<button class="rail-btn extra" data-act="palette" title="Tìm nhanh (Ctrl K)" aria-label="Tìm nhanh">${ic('search', 19)}<span class="rl">Tìm nhanh <kbd>Ctrl K</kbd></span></button>
+    <button class="rail-btn extra" data-act="theme" title="Đổi giao diện sáng / tối" aria-label="Đổi giao diện sáng tối">${ic('moon', 19)}<span class="rl">Giao diện sáng / tối</span></button>
+    ${LIVE ? '' : `<button class="rail-btn extra" data-act="reset" title="Khôi phục dữ liệu mẫu" aria-label="Khôi phục dữ liệu mẫu">${ic('reset', 19)}<span class="rl">Khôi phục dữ liệu mẫu</span></button>`}
+    <button class="rail-btn extra" data-act="rail-toggle" title="${ui.railOpen ? 'Thu gọn menu' : 'Mở rộng menu'}" aria-label="${ui.railOpen ? 'Thu gọn menu' : 'Mở rộng menu'}">${ic('sidebar', 19)}<span class="rl">Thu gọn menu</span></button>
+    <button class="rail-me" data-act="me" title="${esc(person(S.me).name)} — ${LIVE ? 'Hồ sơ & mật khẩu' : 'chế độ demo'}"><span class="me" style="background:${cv(person(S.me).c || 'purple')}">${initials(person(S.me).name)}</span><span class="rl"><b>${esc(person(S.me).name)}</b><small>${esc(person(S.me).role || person(S.me).team || '')}</small></span></button>`;
   $('#rail').innerHTML = html;
 }
 function renderTabs(){
@@ -296,7 +318,7 @@ function render(){
   showApps();
   if (isApp(S.view)){ renderRail(); renderTabs(); save(); return; }
   const ae = document.activeElement, keep = ae && ae.id && /^(INPUT|TEXTAREA)$/.test(ae.tagName) && $('#view').contains(ae) ? {id:ae.id, v:ae.value, a:ae.selectionStart, b:ae.selectionEnd} : null;
-  const ro = LIVE && PERM_MODS.some(m => m[0] === S.view) && perm(S.view) === 'view'
+  const ro = LIVE && viewPerm(S.view) === 'view'
     ? `<div class="ro-banner">${ic('info', 15)}<span><b>Chỉ xem</b> — bạn được xem ${esc(VIEWS[S.view].label)} nhưng chưa có quyền sửa. Thay đổi sẽ không được lưu. Cần sửa? Liên hệ quản trị viên.</span></div>` : '';
   try { $('#view').innerHTML = ro + MOD[S.view](); }
   catch (e){ console.error(e); $('#view').innerHTML = `<div class="card pad empty">Không hiển thị được trang này (${esc(e.message)}). <button class="btn sm" data-act="nav" data-v="dash">Về Tổng quan</button></div>`; }
@@ -306,6 +328,9 @@ function render(){
   save();
 }
 function nav(v, subKey){
+  // tên cũ: Dự án → tab của Quản lý dự án; Tài khoản → Cài đặt
+  if (v === 'projects'){ S.sub.pm = subKey || (['list','setup','detail'].includes(S.sub.pm) ? S.sub.pm : 'list'); v = 'pm'; subKey = null; }
+  if (v === 'admin'){ v = 'settings'; subKey = 'members'; }
   if (!canSee(v)){ toast('Bạn chưa được cấp quyền dùng mục này'); return; }
   if (subKey) S.sub[v] = subKey;
   S.view = v; if (!S.tabs.includes(v)) S.tabs.push(v);
@@ -371,7 +396,8 @@ function aiAsk(q){
 let armed = null, resetArmed = false;
 Object.assign(ACT, {
   nav:(el, d) => nav(d.v, d.sub),
-  sub:(el, d) => { S.sub[d.view] = d.k; render(); },
+  sub:(el, d) => { S.sub[d.view === 'projects' ? 'pm' : d.view] = d.k; render(); },
+  'rail-toggle':() => { ui.railOpen = !ui.railOpen; $('#frame').classList.toggle('rail-open', ui.railOpen); try { localStorage.setItem('sf-rail-open', ui.railOpen ? '1' : ''); } catch (e) {} renderRail(); },
   'tab-close':(el, d) => { S.tabs = S.tabs.filter(v => v !== d.v); if (S.view === d.v) S.view = S.tabs[S.tabs.length - 1]; render(); },
   palette:() => openPalette(),
   pal:(el, d) => { const it = ui.palItems[+d.i]; closeModal(); it && it.run(); },
@@ -496,6 +522,8 @@ DEL.app = id => { S.apps = S.apps.filter(a => a.id !== id); S.tabs = S.tabs.filt
 function boot(){
   try { const th = localStorage.getItem('sf-theme'); if (th) document.documentElement.dataset.theme = th; } catch (e) {}
   try { if (localStorage.getItem('sf-ai-hidden')) $('#frame').classList.add('ai-hidden'); } catch (e) {}
+  try { ui.railOpen = !!localStorage.getItem('sf-rail-open'); } catch (e) {}
+  $('#frame').classList.toggle('rail-open', !!ui.railOpen);
   $('.ai-close').innerHTML = ic('x');
   $('#aiTools').innerHTML = [['gantt', 'Việc nào đang trễ tiến độ?', 'Hỏi việc trễ'], ['wallet', 'Dòng tiền 4 tuần tới thế nào?', 'Hỏi dòng tiền'], ['userclock', 'Nhân công hôm nay?', 'Hỏi nhân công']]
     .map(([i, q, l]) => `<button type="button" class="round" data-act="ai-fill" data-q="${esc(q)}" title="${l}" aria-label="${l}">${ic(i, 16)}</button>`).join('') + '<button class="send" type="submit">Gửi</button>';
