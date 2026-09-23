@@ -83,6 +83,7 @@ const IC = {
   users:'<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8"/><path d="M18 14.2a6.5 6.5 0 0 1 3.5 5.8"/>',
   bulb:'<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2V17h5v-1.1c0-.8.4-1.5 1-2A6 6 0 0 0 12 3z"/>',
   clip:'<path d="m21 11-8.5 8.5a5 5 0 0 1-7-7L14 4a3.5 3.5 0 0 1 5 5l-8.5 8.5a2 2 0 0 1-3-3L15 7"/>',
+  external:'<path d="M14 4h6v6M20 4l-9 9"/><path d="M18 14v4.5a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 4 18.5v-11A1.5 1.5 0 0 1 5.5 6H10"/>',
   hardhat:'<path d="M3 18h18v-2a9 9 0 0 0-18 0zM10 7v6M14 7v6M10 7a2 2 0 0 1 4 0"/>'
 };
 const ic = (n, s = 18) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[n] || ''}</svg>`;
@@ -99,6 +100,15 @@ const VIEWS = {
   qs:{label:'QS', icon:'ruler', group:'Vận hành'},
   wiki:{label:'Wiki', icon:'book', group:'Vận hành'}
 };
+/* Ứng dụng web nhúng (giống mục ứng dụng trong Lark): mở ngay trong workspace bằng khung riêng. */
+const DEFAULT_APPS = [{id:'qspro', name:'QS Pro', desc:'Dự toán & bóc tách chuyên nghiệp', url:'https://qs-pro-srgx.onrender.com/', icon:'ruler', c:'orange'}];
+const APP_ICONS = ['ruler','grid','briefcase','building','wallet','book','chat','users','gantt','file','target','bulb'];
+const isApp = v => String(v).startsWith('app-');
+const appOf = v => (S.apps || []).find(a => 'app-' + a.id === v);
+function vinfo(v){
+  if (isApp(v)){ const a = appOf(v); return a ? {label:a.name, icon:a.icon, group:'Ứng dụng', app:a} : null; }
+  return VIEWS[v] || null;
+}
 const MOD = {}, AFTER = {}, ACT = {}, FORM = {}, INP = {}, CHG = {}, DROP = {}, DEL = {};
 const SEEDS = [], SEARCH = [], AI = [], AI_CHIPS = [], AI_SUGG = [];
 
@@ -107,7 +117,7 @@ const KEY = 'siteflow-workspace-v1';
 let S;
 const ui = {notif:false, palItems:[]};
 function seed(){
-  const s = {v:1, view:'dash', tabs:['dash','sales','projects','chat','pm'], pid:'riverside', sub:{}, ai:[], activity:[], seenAct:0, me:'ta',
+  const s = {v:1, view:'dash', tabs:['dash','sales','projects','chat','pm','app-qspro'], apps:JSON.parse(JSON.stringify(DEFAULT_APPS)), pid:'riverside', sub:{}, ai:[], activity:[], seenAct:0, me:'ta',
     people:[
       {id:'ta', name:'Trần Anh', role:'Quản lý dự án', team:'Văn phòng', c:'purple'},
       {id:'da', name:'Nguyễn Đức Anh', role:'Chỉ huy trưởng', team:'Ban chỉ huy', c:'blue'},
@@ -136,6 +146,8 @@ function seed(){
 function load(){
   try { S = JSON.parse(localStorage.getItem(KEY)); } catch (e) { S = null; }
   if (!S || S.v !== 1) S = seed();
+  if (!S.apps) S.apps = JSON.parse(JSON.stringify(DEFAULT_APPS));
+  S.tabs = S.tabs.filter(vinfo);
 }
 function save(){ try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
 function log(text, c = 'purple'){ S.activity.unshift({t:Date.now(), text, c}); S.activity = S.activity.slice(0, 40); }
@@ -225,6 +237,9 @@ function renderRail(){
       : k === 'att' && typeof attPending === 'function' && attPending().length ? '<span class="badge"></span>' : '';
     html += `<button class="rail-btn ${S.view === k ? 'on' : ''}" data-act="nav" data-v="${k}" title="${v.label}" aria-label="${v.label}">${ic(v.icon, 19)}${badge}</button>`;
   });
+  html += `<div class="rail-label">Ứng dụng</div>`;
+  S.apps.forEach(a => { const v = 'app-' + a.id; html += `<button class="rail-btn app ${S.view === v ? 'on' : ''}" data-act="nav" data-v="${v}" title="${esc(a.name)} — ${esc(a.desc || a.url)}" aria-label="${esc(a.name)}" style="--c:${cv(a.c)};--t:${ct(a.c)}">${ic(a.icon, 19)}</button>`; });
+  html += `<button class="rail-btn extra" data-act="app-new" title="Thêm ứng dụng web" aria-label="Thêm ứng dụng web">${ic('plus', 19)}</button>`;
   html += `<div class="rail-label extra">Cài đặt</div>
     <button class="rail-btn extra" data-act="palette" title="Tìm nhanh (Ctrl K)" aria-label="Tìm nhanh">${ic('search', 19)}</button>
     <button class="rail-btn extra" data-act="theme" title="Đổi giao diện sáng / tối" aria-label="Đổi giao diện sáng tối">${ic('moon', 19)}</button>
@@ -234,19 +249,23 @@ function renderRail(){
   $('#rail').innerHTML = html;
 }
 function renderTabs(){
-  $('#tabs').innerHTML = S.tabs.map(v => `
+  $('#tabs').innerHTML = S.tabs.filter(vinfo).map(v => `
     <div class="tab ${S.view === v ? 'on' : ''}">
-      <button data-act="nav" data-v="${v}">${ic(VIEWS[v].icon, 14)}${VIEWS[v].label}</button>
-      ${S.tabs.length > 1 ? `<button class="x" data-act="tab-close" data-v="${v}" aria-label="Đóng tab ${VIEWS[v].label}">${ic('x', 12)}</button>` : ''}
+      <button data-act="nav" data-v="${v}">${ic(vinfo(v).icon, 14)}${esc(vinfo(v).label)}</button>
+      ${S.tabs.length > 1 ? `<button class="x" data-act="tab-close" data-v="${v}" aria-label="Đóng tab ${esc(vinfo(v).label)}">${ic('x', 12)}</button>` : ''}
     </div>`).join('') + `<button class="tab-add" data-act="palette" aria-label="Mở trang khác" title="Mở trang khác">${ic('plus', 15)}</button>`;
 }
 function renderTop(){
-  const v = VIEWS[S.view];
+  const v = vinfo(S.view);
+  const a = v.app;
+  const appBtns = a ? `<button class="icon-btn" data-act="app-reload" aria-label="Tải lại ${esc(a.name)}" title="Tải lại">${ic('reset')}</button>
+      <a class="icon-btn" href="${esc(a.url)}" target="_blank" rel="noopener" aria-label="Mở trong trình duyệt" title="Mở trong trình duyệt">${ic('external')}</a>
+      <button class="icon-btn" data-act="app-edit" data-id="${a.id}" aria-label="Sửa ứng dụng" title="Sửa ứng dụng">${ic('edit')}</button><span style="width:1px;height:20px;background:var(--line);margin:0 4px"></span>` : '';
   const scoped = v.scoped ? `<span class="ws">${ic('chev', 13)}</span><select data-change="pid" aria-label="Chọn dự án">${opt(S.projects.filter(p => p.status !== 'draft').map(p => [p.id, p.name]), S.pid)}</select>` : '';
   const newAct = S.activity.length > S.seenAct;
   $('#topbar').innerHTML = `
-    <div class="crumb"><span class="ws">SiteFlow</span>${scoped}<span class="ws">${ic('chev', 13)}</span><b>${ic(v.icon, 16)}${v.label}</b></div>
-    <div class="top-actions">
+    <div class="crumb"><span class="ws">${a ? 'Ứng dụng' : 'SiteFlow'}</span>${scoped}<span class="ws">${ic('chev', 13)}</span><b>${ic(v.icon, 16)}${esc(v.label)}</b>${a ? `<span class="ws small ell" style="max-width:260px">${esc(a.url.replace(/^https?:\/\//, '').replace(/\/$/, ''))}</span>` : ''}</div>
+    <div class="top-actions">${appBtns}
       <button class="icon-btn" data-act="palette" aria-label="Tìm nhanh" title="Tìm nhanh (Ctrl K)">${ic('search')}</button>
       <button class="icon-btn" data-act="nav" data-v="chat" aria-label="Chat" title="Chat">${ic('chat')}${chatUnreadTotal() ? '<span class="badge"></span>' : ''}</button>
       <button class="icon-btn" data-act="notif" aria-label="Hoạt động gần đây" title="Hoạt động gần đây">${ic('bell')}${newAct ? '<span class="badge"></span>' : ''}</button>
@@ -255,8 +274,10 @@ function renderTop(){
     </div>`;
 }
 function render(){
-  if (!MOD[S.view]) S.view = 'dash';
+  if (!vinfo(S.view) || (!isApp(S.view) && !MOD[S.view])) S.view = 'dash';
   renderTop();
+  showApps();
+  if (isApp(S.view)){ renderRail(); renderTabs(); save(); return; }
   $('#view').innerHTML = MOD[S.view]();
   renderRail(); renderTabs(); renderTop();
   if (AFTER[S.view]) AFTER[S.view]();
@@ -291,7 +312,8 @@ function openPalette(){
 }
 function palSearch(q){
   const s = q.trim().toLowerCase(), hit = x => !s || String(x).toLowerCase().includes(s);
-  let items = Object.entries(VIEWS).filter(([, o]) => hit(o.label)).map(([v, o]) => ({icon:o.icon, label:'Mở ' + o.label, sub:'Trang', run:() => nav(v)}));
+  let items = Object.entries(VIEWS).filter(([, o]) => hit(o.label)).map(([v, o]) => ({icon:o.icon, label:'Mở ' + o.label, sub:'Trang', run:() => nav(v)}))
+    .concat(S.apps.filter(a => hit(a.name + ' ' + a.url)).map(a => ({icon:a.icon, label:'Mở ' + a.name, sub:'Ứng dụng', run:() => nav('app-' + a.id)})));
   if (s) SEARCH.forEach(f => items = items.concat(f(hit)));
   ui.palItems = items.slice(0, 14);
   $('#palList').innerHTML = ui.palItems.map((it, i) => `<button class="pal-item ${i === 0 ? 'first' : ''}" data-act="pal" data-i="${i}">${ic(it.icon, 16)}<span>${esc(it.label)}</span><small>${esc(it.sub)}</small></button>`).join('') || '<div class="empty">Không tìm thấy kết quả</div>';
@@ -401,6 +423,50 @@ document.addEventListener('drop', e => {
   if (kind === ck && DROP[kind]) DROP[kind](id, target);
   render();
 });
+
+/* ============ ứng dụng nhúng ============ */
+// Mỗi ứng dụng giữ một iframe sống suốt phiên: chuyển tab không làm mất trạng thái / đăng nhập bên trong.
+function showApps(){
+  const box = $('#apps'), cur = isApp(S.view) ? appOf(S.view) : null;
+  $('#view').hidden = !!cur; box.hidden = !cur;
+  box.querySelectorAll('.app-frame').forEach(f => { if (!S.apps.some(a => a.id === f.dataset.id)) f.remove(); else f.hidden = !cur || f.dataset.id !== cur.id; });
+  if (!cur) return;
+  let f = box.querySelector(`.app-frame[data-id="${cur.id}"]`);
+  if (f && f.dataset.url !== cur.url){ f.remove(); f = null; }
+  if (!f){
+    f = document.createElement('div'); f.className = 'app-frame'; f.dataset.id = cur.id; f.dataset.url = cur.url;
+    f.innerHTML = `<div class="app-loading"><div class="spin"></div><b>Đang mở ${esc(cur.name)}…</b><span>Máy chủ miễn phí có thể mất tới ~50 giây để khởi động lần đầu.</span><a class="btn line sm" href="${esc(cur.url)}" target="_blank" rel="noopener">${ic('external', 14)}Mở trong trình duyệt</a></div>
+      <iframe title="${esc(cur.name)}" src="${esc(cur.url)}" allow="clipboard-read; clipboard-write; fullscreen; downloads" referrerpolicy="no-referrer-when-downgrade"></iframe>`;
+    f.querySelector('iframe').addEventListener('load', () => f.classList.add('ready'));
+    box.appendChild(f);
+  }
+}
+Object.assign(ACT, {
+  'app-reload':() => { const f = $(`#apps .app-frame[data-id="${appOf(S.view).id}"]`); if (f){ f.classList.remove('ready'); const i = f.querySelector('iframe'); i.src = appOf(S.view).url; } },
+  'app-new':() => appModal(null),
+  'app-edit':(el, d) => appModal(S.apps.find(a => a.id === d.id))
+});
+function appModal(a){
+  const x = a || {id:'', name:'', desc:'', url:'https://', icon:'grid', c:'blue'};
+  showModal(`<form class="modal" data-form="app" data-id="${x.id}">
+    <h3>${a ? 'Sửa ứng dụng' : 'Thêm ứng dụng web'}${closeBtn()}</h3>
+    <div class="sub">Giống mục ứng dụng trong Lark: link web mở ngay bên trong workspace, có nút mở ra trình duyệt khi cần.</div>
+    <div class="row2"><label class="field">Tên hiển thị<input id="ap-name" name="name" required value="${esc(x.name)}" placeholder="VD: QS Pro"></label>
+      <label class="field">Mô tả ngắn<input id="ap-desc" name="desc" value="${esc(x.desc || '')}"></label></div>
+    <label class="field">Đường dẫn (https://…)<input id="ap-url" name="url" type="url" required pattern="https://.+" value="${esc(x.url)}"></label>
+    <div class="field">Biểu tượng<div class="chips">${APP_ICONS.map(i => `<label class="fchip sm" style="cursor:pointer"><input type="radio" name="icon" value="${i}" ${i === x.icon ? 'checked' : ''} style="accent-color:var(--purple)">${ic(i, 15)}</label>`).join('')}</div></div>
+    <div class="field">Màu<div class="chips">${['orange','blue','purple','green','yellow','pink','brown'].map(c => `<label class="fchip sm" style="cursor:pointer"><input type="radio" name="c" value="${c}" ${c === x.c ? 'checked' : ''} style="accent-color:${cv(c)}"><span class="dot" style="--c:${cv(c)}"></span></label>`).join('')}</div></div>
+    <div class="small muted">Lưu ý: một số trang (Google, Facebook, ngân hàng…) chặn việc nhúng — khi đó dùng nút “Mở trong trình duyệt”.</div>
+    <div class="m-actions">${a ? delBtn('app') : ''}<button type="button" class="btn ghost" data-act="modal-close">Huỷ</button><button class="btn" type="submit">${a ? 'Lưu' : 'Thêm vào menu'}</button></div>
+  </form>`);
+}
+FORM.app = (v, f) => {
+  let a = S.apps.find(x => x.id === f.dataset.id);
+  const data = {name:v.name.trim(), desc:v.desc.trim(), url:v.url.trim(), icon:v.icon || 'grid', c:v.c || 'blue'};
+  if (a) Object.assign(a, data); else { a = {id:uid(), ...data}; S.apps.push(a); }
+  closeModal(); log('Ứng dụng: ' + a.name, 'blue'); nav('app-' + a.id); toast('Đã lưu ứng dụng ' + a.name);
+};
+DEL.app = id => { S.apps = S.apps.filter(a => a.id !== id); S.tabs = S.tabs.filter(t => t !== 'app-' + id); if (S.view === 'app-' + id) S.view = 'dash'; };
 
 /* ============ khởi động ============ */
 function boot(){

@@ -21,7 +21,8 @@ http.createServer((req, res) => {
     fs.readFile(file, (e, buf) => {
       if (e) { res.writeHead(404); return res.end('Not found'); }
       const ext = path.extname(file);
-      res.writeHead(200, {'Content-Type': TYPES[ext] || 'application/octet-stream', 'Cache-Control': ext === '.html' ? 'no-cache' : 'public, max-age=300'});
+      // no-cache: trình duyệt luôn lấy bản mới sau mỗi lần deploy (tránh HTML mới chạy với JS cũ).
+      res.writeHead(200, {'Content-Type': TYPES[ext] || 'application/octet-stream', 'Cache-Control': 'no-cache'});
       res.end(buf);
     });
   });

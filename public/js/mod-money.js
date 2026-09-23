@@ -447,7 +447,8 @@ MOD.qs = () => {
       ${[...Q.po].sort((a, b) => b.date.localeCompare(a.date)).map(o => { const qp = Q.projects.find(x => x.id === o.qp) || {code:'—'}; const v = sum(o.items, it => prod(it.p).price * it.q); return `<tr><td class="b num">${esc(o.code)}</td><td>${esc(qp.code)}</td><td>${esc(o.brand)}</td><td class="small">${o.items.map(it => esc(prod(it.p).name) + ' × ' + it.q).join('<br>')}</td><td class="r b">${vnd(v)}</td><td>${fmtDate(o.date)}</td><td>${pill(...POS[o.status])}</td><td class="r">${o.status !== 'received' ? `<button class="btn line sm" data-act="po-next" data-id="${o.id}">${o.status === 'wait' ? 'Đã đặt hàng' : 'Đã nhận hàng'}</button>` : ''}</td></tr>`; }).join('')}
     </tbody></table></div>`;
   }
-  return head('QS — Bóc tách & Báo giá', 'Bóc tách chi phí theo phòng, chọn sản phẩm từ danh mục, xuất báo giá và tạo đơn mua hàng.') + tabs + body;
+  const qsApp = S.apps.find(x => x.id === 'qspro');
+  return head('QS — Bóc tách & Báo giá', 'Bóc tách chi phí theo phòng, chọn sản phẩm từ danh mục, xuất báo giá và tạo đơn mua hàng.', qsApp ? `<button class="btn" data-act="nav" data-v="app-qspro">${ic('external', 15)}Mở QS Pro</button>` : '') + tabs + body;
 };
 CHG['qs-cur'] = el => { S.qs.cur = el.value; S.qs.room = 'all'; render(); };
 CHG['qs-vat'] = el => { S.qs.vat = +el.value; render(); };
