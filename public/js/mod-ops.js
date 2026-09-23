@@ -149,6 +149,7 @@ function findGTask(pid, id){ for (const ph of S.gantt[pid] || []) { const t = ph
 MOD.pm = () => {
   const cur = sub('pm', 'gantt');
   const p = proj(S.pid) || S.projects[0];
+  if (!p) return noProjects();
   const tabs = subtabs('pm', [['gantt','Tiến độ'],['quest','Nhiệm vụ & điểm thưởng']], 'gantt');
   const body = cur === 'gantt' ? ganttView(p) : questView();
   return head('Quản lý dự án', esc(p.name) + (cur === 'gantt' ? ' — tiến độ Gantt, mốc quan trọng và dòng tiền gắn với công việc.' : ' — quy trình game hoá, đổi quà và bảng xếp hạng.'),
@@ -319,7 +320,7 @@ CHG['q-task'] = el => {
   if (el.checked){
     toast(`+${t.pts} điểm cho ${person(q.player).name}`);
     const s = q.steps[+el.dataset.s];
-    if (s.tasks.every(x => x.done)){ log(`${person(q.player).name} hoàn thành bước “${s.name}”`, 'pink'); S.msgs.push({id:uid(), cv:'g-b12', from:q.player, text:`Đã xong bước ${+el.dataset.s + 1} “${s.name}”, mời anh kiểm tra ạ`, t:Date.now()}); }
+    if (s.tasks.every(x => x.done)){ log(`${person(q.player).name} hoàn thành bước “${s.name}”`, 'pink'); botPost('Hoàn thành bước', `${person(q.player).name} đã xong bước ${+el.dataset.s + 1} “${s.name}” — mời kiểm tra.`, 'green', esc(q.name), 'pm', 'quest'); }
   }
   render();
 };
@@ -334,7 +335,7 @@ ACT['q-safety'] = () => { const q = S.quest; if (q.lastSafety === todayISO()) re
 /* ================= CHẤM CÔNG ================= */
 const site = id => S.att.sites.find(s => s.id === id) || {name:'—'};
 const attPending = () => S.att ? S.att.approvals.filter(a => a.status === 'pending') : [];
-function attSummary(){ const s = S.att.sites; return {sites:s, total:sum(s, x => x.cap), present:sum(s, x => x.present)}; }
+function attSummary(){ const s = S.att.sites; return {sites:s, total:Math.max(1, sum(s, x => x.cap)), present:sum(s, x => x.present)}; }
 const fmtMin = m => Math.floor(m / 60) + 'h' + pad(Math.round(m % 60));
 const workedMin = r => { if (!r.in) return 0; const end = r.out ? toMin(r.out) : Math.min(toMin(nowHM()), 17 * 60 + 30); return Math.max(0, end - toMin(r.in) - (end > 12 * 60 ? 60 : 0)); };
 const REC_ST = {ok:['Đúng giờ','green'], late:['Trễ','yellow'], none:['Chưa chấm công','red'], out:['Ngoài vùng · chờ duyệt','orange'], 'out-ok':['Ngoài vùng · đã duyệt','green'], 'out-no':['Ngoài vùng · từ chối','red']};

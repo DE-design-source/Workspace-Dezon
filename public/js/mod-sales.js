@@ -73,6 +73,7 @@ const projName = id => (proj(id) || {}).name || '—';
 const projProgress = p => (typeof ganttStats === 'function' && S.gantt && S.gantt[p.id]) ? ganttStats(p.id).actual : p.progress;
 const PSTATUS = {active:['Đang thi công','blue'], draft:['Bản nháp','gray'], done:['Hoàn tất','green']};
 function botPost(title, text, level = 'blue', meta = '', go = '', subk = '', alsoConv){
+  if (LIVE) return LIVE.postBot(title, text, level, meta, go, subk, alsoConv);
   const m = {id:uid(), cv:'bot', from:'bot', text, t:Date.now(), bot:{level, title, meta, go, sub:subk}};
   S.msgs.push(m);
   if (alsoConv) S.msgs.push({...m, id:uid(), cv:alsoConv});
@@ -89,8 +90,10 @@ function calendarEvents(){
   Object.entries(S.fin || {}).forEach(([pid, f]) => f.inv.filter(i => i.status !== 'paid').forEach(i => ev.push({date:i.due, title:i.code + ' · ' + i.partner, c:'yellow', tag:'Hoá đơn', pc:'yellow', go:'fin', sub:'invoices', pid})));
   return ev;
 }
+const noProjects = () => head('Chưa có dự án nào', '') + emptyBox('Bắt đầu từ Kinh doanh', 'Thêm khách hàng tiềm năng, khi chuyển sang cột “Dự án” hồ sơ dự án sẽ tự tạo — sau đó thiết lập thi công để có tiến độ, tài chính, chấm công.', `<button class="btn" data-act="nav" data-v="sales" data-sub="kanban">${ic('plus', 15)}Thêm khách hàng</button>`);
 MOD.dash = () => {
   const p = proj(S.pid) || S.projects[0];
+  if (!p) return noProjects();
   const g = ganttStats(p.id), att = attSummary(), f = finStats(p.id);
   const late = ganttLate(p.id), pend = attPending(), overdue = f.overdue;
   const alerts = late.length + pend.length + overdue.length;
@@ -311,6 +314,7 @@ MOD.projects = () => {
   } else if (cur === 'setup'){
     const cand = S.projects.filter(p => p.status !== 'done');
     const p = proj(ui.setupPid) || cand.find(x => x.status === 'draft') || cand[0];
+    if (!p) return head('Dự án', '') + tabs + emptyBox('Chưa có dự án cần thiết lập', 'Dự án được tạo khi cơ hội bên Kinh doanh chuyển sang cột “Dự án (Thiết kế)” hoặc “Dự án (Thi công)”.', `<button class="btn" data-act="nav" data-v="sales" data-sub="kanban">Mở Kinh doanh</button>`);
     const ex = {qs:S.qs.projects.some(q => q.pid === p.id), g:!!S.gantt[p.id], site:S.att.sites.some(s => s.pid === p.id), fin:!!S.fin[p.id], chat:S.convs.some(c => c.pid === p.id)};
     const ck = (ok, name, what) => `<div><span class="sq" style="--c:${ok ? 'var(--green)' : 'var(--muted)'};--t:${ok ? 'var(--green-t)' : 'var(--chip)'};width:26px;height:26px;border-radius:8px">${ic(ok ? 'check' : 'plus', 14)}</span><b style="font-weight:500">${name}</b><small>${ok ? 'Đã có' : what}</small></div>`;
     body = `<div class="card pad small" style="background:var(--hover)">Việc tạo hồ sơ khách hàng mới thuộc mục <button class="link" data-act="nav" data-v="sales" style="text-decoration:underline">Kinh doanh</button>. Khi một cơ hội chuyển vào cột “Dự án (Thiết kế)” hoặc “Dự án (Thi công)”, dự án tự xuất hiện ở đây để bạn bổ nhiệm nhân sự và khởi tạo dữ liệu vận hành.</div>
@@ -330,6 +334,7 @@ MOD.projects = () => {
     </form>`;
   } else {
     const p = proj(S.pid) || S.projects[0];
+    if (!p) return head('Dự án', '') + tabs + emptyBox('Chưa có dự án', 'Hồ sơ dự án tự tạo từ Kinh doanh.', `<button class="btn" data-act="nav" data-v="sales" data-sub="kanban">Mở Kinh doanh</button>`);
     const lead = S.leads.find(l => l.id === p.leadId);
     const g = S.gantt[p.id] ? ganttStats(p.id) : null;
     const qsp = S.qs.projects.filter(q => q.pid === p.id);
@@ -375,7 +380,9 @@ FORM.setup = (v, f) => {
   if (!S.fin[p.id]) S.fin[p.id] = finTemplate(p);
   if (!S.att.sites.some(s => s.pid === p.id)) S.att.sites.push({id:'s' + uid(), pid:p.id, name:p.name.split('—')[0].trim(), addr:p.addr, radius:100, cap:20, present:0});
   if (!S.qs.projects.some(q => q.pid === p.id)) S.qs.projects.push({id:'q' + uid(), code:'QS-' + pad(S.qs.projects.length + 1), pid:p.id, name:p.name, client:p.client, phone:p.phone, addr:p.addr, created:todayISO(), status:'draft', quoted:false, rooms:[{id:uid(), name:'Phòng khách', items:[]}]});
-  if (!S.convs.some(c => c.pid === p.id)) S.convs.push({id:'g-' + p.id, type:'group', name:p.name, sub:'Nhóm dự án', icon:'building', c:'blue', members:[S.me, p.pm, p.safety, p.purchase].filter(Boolean).filter((x, i, a) => a.indexOf(x) === i), files:[], pid:p.id});
+  const gm = [S.me, p.pm, p.safety, p.purchase].filter(Boolean).filter((x, i, a) => a.indexOf(x) === i);
+  if (LIVE) LIVE.createGroup(p.name, gm, p.id);
+  else if (!S.convs.some(c => c.pid === p.id)) S.convs.push({id:'g-' + p.id, type:'group', name:p.name, sub:'Nhóm dự án', icon:'building', c:'blue', members:gm, files:[], pid:p.id});
   const lead = S.leads.find(l => l.id === p.leadId); if (lead && lead.stage !== 'build'){ lead.stage = 'build'; lead.updated = todayISO(); }
   botPost('Dự án bắt đầu thi công', `${p.name} đã được thiết lập: PM ${p.pm ? person(p.pm).name : 'chưa gán'}, khởi công ${fmtFull(p.start)}. Đã khởi tạo QS, tiến độ, chấm công, tài chính và nhóm chat.`, 'green', 'Module Dự án', 'projects', 'detail', 'g-' + p.id);
   log('Thiết lập thi công ' + p.name, 'blue');
@@ -386,15 +393,17 @@ SEARCH.push(hit => S.leads.filter(l => hit(l.name + ' ' + l.proj + ' ' + l.phone
 
 /* ================= CHAT ================= */
 const convMsgs = id => S.msgs.filter(m => m.cv === id);
-const convUnread = id => Math.max(0, convMsgs(id).length - (S.read[id] || 0));
+const convUnread = id => LIVE ? LIVE.unread(id) : Math.max(0, convMsgs(id).length - (S.read[id] || 0));
 function chatUnreadTotal(){ return S.convs ? sum(S.convs, c => convUnread(c.id)) : 0; }
 const convName = c => c.type === 'dm' ? person(c.user).name : c.name;
 const convSub = c => c.type === 'dm' ? person(c.user).team + ' · ' + person(c.user).role : c.type === 'group' ? c.members.length + ' thành viên' + (c.pid ? ' · ' + c.sub : '') : c.sub;
 const convIcon = (c, s = 36) => c.type === 'dm' ? av(c.user, s) : `<span class="sq" style="--c:${cv(c.c)};--t:${ct(c.c)};width:${s}px;height:${s}px">${ic(c.icon, Math.round(s / 2))}</span>`;
 const LV = {red:['red','alert'], yellow:['yellow','pin'], blue:['blue','info'], green:['green','check']};
 MOD.chat = () => {
-  const c = S.convs.find(x => x.id === S.cv) || S.convs[0]; S.cv = c.id;
-  S.read[c.id] = convMsgs(c.id).length;
+  const c = S.convs.find(x => x.id === S.cv) || S.convs[0];
+  if (!c) return head('Chat', '') + emptyBox('Đang tải hội thoại…', 'Nếu lâu không thấy, hãy tải lại trang.');
+  S.cv = c.id;
+  if (LIVE) LIVE.markRead(c.id); else S.read[c.id] = convMsgs(c.id).length;
   const filt = ui.chatFilt || 'all', q = (ui.chatQ || '').toLowerCase();
   const items = S.convs.filter(x => (filt === 'all' || convUnread(x.id) || x.id === c.id) && (!q || convName(x).toLowerCase().includes(q)))
     .sort((a, b) => (convMsgs(b.id).slice(-1)[0] || {t:0}).t - (convMsgs(a.id).slice(-1)[0] || {t:0}).t);
@@ -409,8 +418,13 @@ MOD.chat = () => {
     if (day !== lastDay){ lastDay = day; sep = `<div class="day-sep">${relDay(day)}</div>`; }
     if (m.bot){ const [col, icn] = LV[m.bot.level] || LV.blue; return sep + `<div class="botmsg" style="--c:${cv(col)};--t:${ct(col)}"><b>${ic(icn, 15)}${esc(m.bot.title)}</b><p>${esc(m.text)}</p><small><span>SiteFlow Bot · ${esc(m.bot.meta)} · ${hm(m.t)}</span>${m.bot.go ? `<button class="link" data-act="nav" data-v="${m.bot.go}" ${m.bot.sub ? `data-sub="${m.bot.sub}"` : ''}>Xem chi tiết ›</button>` : ''}</small></div>`; }
     const me = m.from === S.me;
-    const file = m.file ? `<div class="file">${ic('file', 18)}<span>${esc(m.file.name)}<small>${esc(m.file.size)}</small></span></div>` : '';
-    return sep + `<div class="msg ${me ? 'me' : ''}">${me ? '' : av(m.from, 30)}<div><div class="meta">${me ? '' : esc(person(m.from).name) + ' · '}${hm(m.t)}</div><div class="bubble">${esc(m.text)}${file}</div></div></div>`;
+    const img = m.file && m.file.path && /^image\//.test(m.file.type || '');
+    const file = m.file && !m.deleted ? (m.file.path
+      ? `${img ? `<img class="chat-img" data-path="${esc(m.file.path)}" alt="${esc(m.file.name)}" data-act="chat-file" data-path2="${esc(m.file.path)}">` : ''}<button class="file" data-act="chat-file" data-path="${esc(m.file.path)}">${ic('file', 18)}<span>${esc(m.file.name)}<small>${esc(m.file.size)} · bấm để mở</small></span></button>`
+      : `<div class="file">${ic('file', 18)}<span>${esc(m.file.name)}<small>${esc(m.file.size)}</small></span></div>`) : '';
+    const body = m.deleted ? '<i class="muted">Tin nhắn đã được thu hồi</i>' : esc(m.text) + (m.edited ? ' <small class="muted">(đã sửa)</small>' : '');
+    const tools = LIVE && me && !m.deleted && Date.now() - m.t < 24 * 36e5 ? ` · <button class="link" data-act="msg-recall" data-id="${m.id}">Thu hồi</button>` : '';
+    return sep + `<div class="msg ${me ? 'me' : ''}">${me ? '' : av(m.from, 30)}<div><div class="meta">${me ? '' : esc(person(m.from).name) + ' · '}${hm(m.t)}${m.pending ? ' · đang gửi…' : ''}${tools}</div><div class="bubble">${body}${file}</div></div></div>`;
   }).join('');
   const info = ui.chatInfo && c.type !== 'bot';
   const files = c.files.concat(convMsgs(c.id).filter(m => m.file && !c.files.some(f => f.name === m.file.name)).map(m => m.file));
@@ -418,7 +432,8 @@ MOD.chat = () => {
     <div class="chat ${info ? 'info' : ''}">
       <div class="chat-side">
         <div class="top">
-          <div class="search">${ic('search', 15)}<input id="chat-q" data-input="chat-q" value="${esc(ui.chatQ || '')}" placeholder="Tìm hội thoại" aria-label="Tìm hội thoại"></div>
+          <div class="row"><div class="search" style="flex:1">${ic('search', 15)}<input id="chat-q" data-input="chat-q" value="${esc(ui.chatQ || '')}" placeholder="Tìm hội thoại" aria-label="Tìm hội thoại"></div>${LIVE ? `<button class="icon-btn" data-act="conv-new" title="Nhắn riêng / tạo nhóm" aria-label="Nhắn riêng hoặc tạo nhóm" style="border:1px solid var(--line)">${ic('plus')}</button>` : ''}</div>
+          ${LIVE && LIVE.canNotify() ? `<button class="btn line sm" data-act="notify-on">${ic('bell', 14)}Bật thông báo tin nhắn mới</button>` : ''}
           <div class="seg"><button class="${filt === 'all' ? 'on' : ''}" data-act="chat-filt" data-f="all">Tất cả</button><button class="${filt === 'unread' ? 'on' : ''}" data-act="chat-filt" data-f="unread">Chưa đọc${chatUnreadTotal() ? `<span class="cnt">${chatUnreadTotal()}</span>` : ''}</button></div>
         </div>
         <div class="conv-list">${list}</div>
@@ -431,7 +446,7 @@ MOD.chat = () => {
           <label class="icon-btn" title="Đính kèm tệp" aria-label="Đính kèm tệp" style="cursor:pointer">${ic('clip')}<input type="file" data-change="chat-file" hidden></label>
           <input type="text" id="chatIn" name="text" autocomplete="off" placeholder="Nhắn tới ${esc(convName(c))}" aria-label="Nội dung tin nhắn"><button class="send" type="submit" style="margin-left:0">Gửi</button></form>`}
       </div>
-      ${info ? `<div class="chat-info"><h4>Thành viên (${c.members.length})</h4>${c.members.map(id => `<div class="who">${av(id, 30)}<span><b style="font-weight:500;font-size:13px">${esc(person(id).name)}${id === S.me ? ' (bạn)' : ''}</b><small>${esc(person(id).role)} · ${esc(person(id).team)}</small></span></div>`).join('')}
+      ${info ? `<div class="chat-info"><h4>Thành viên (${c.members.length})</h4>${LIVE && c.type === 'group' ? `<div class="row"><button class="btn line sm" data-act="conv-add" data-id="${c.id}">${ic('plus', 13)}Thêm người</button>${LIVE.fixed(c.id) ? '' : `<button class="btn ghost sm" data-act="conv-leave" data-id="${c.id}">Rời nhóm</button>`}</div>` : ''}${c.members.map(id => `<div class="who">${av(id, 30)}<span><b style="font-weight:500;font-size:13px">${esc(person(id).name)}${id === S.me ? ' (bạn)' : ''}</b><small>${esc(person(id).role)} · ${esc(person(id).team)}</small></span></div>`).join('')}
         <h4>Tệp đã chia sẻ</h4>${files.map(f => `<div class="file" style="margin:0">${ic('file', 18)}<span>${esc(f.name)}<small>${esc(f.size)}</small></span></div>`).join('') || '<div class="small muted">Chưa có tệp</div>'}</div>` : ''}
     </div>`;
 };
@@ -441,7 +456,8 @@ ACT['chat-filt'] = (el, d) => { ui.chatFilt = d.f; render(); };
 ACT['chat-info'] = () => { ui.chatInfo = !ui.chatInfo; render(); };
 INP['chat-q'] = el => { ui.chatQ = el.value; render(); const i = $('#chat-q'); i.focus(); i.setSelectionRange(i.value.length, i.value.length); };
 const REPLIES = ['Dạ em nhận rồi ạ.','Ok anh, em xử lý trong hôm nay.','Em kiểm tra lại rồi báo anh trong 30 phút nhé.','Dạ, em cập nhật lên tiến độ luôn ạ.'];
-function sendChat(extra){
+function sendChat(extra, fileObj){
+  if (LIVE) return LIVE.send(S.cv, extra, fileObj);
   const c = S.convs.find(x => x.id === S.cv);
   S.msgs.push({id:uid(), cv:c.id, from:S.me, t:Date.now(), text:'', ...extra});
   render(); const i = $('#chatIn'); if (i) i.focus();
@@ -458,7 +474,8 @@ function sendChat(extra){
   }, 2300);
 }
 FORM.chat = v => { const t = (v.text || '').trim(); if (t) sendChat({text:t}); };
-CHG['chat-file'] = el => { const f = el.files[0]; if (!f) return; const kb = f.size / 1024; sendChat({text:'Đã gửi một tệp', file:{name:f.name, size:kb > 1024 ? dec(kb / 1024, 1) + ' MB' : Math.max(1, Math.round(kb)) + ' KB'}}); };
+const fmtSize = bytes => { const kb = bytes / 1024; return kb > 1024 ? dec(kb / 1024, 1) + ' MB' : Math.max(1, Math.round(kb)) + ' KB'; };
+CHG['chat-file'] = el => { const f = el.files[0]; if (!f) return; el.value = ''; sendChat({text:'', file:{name:f.name, size:fmtSize(f.size), type:f.type}}, f); };
 SEARCH.push(hit => S.convs.filter(c => hit(convName(c))).map(c => ({icon:'chat', label:convName(c), sub:'Chat', run:() => { S.cv = c.id; nav('chat'); }})));
 
 /* ================= trợ lý ================= */

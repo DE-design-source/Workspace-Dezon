@@ -537,6 +537,17 @@ textarea.md{width:100%;min-height:320px;border:1px solid var(--line);border-radi
 .rail-btn.app{color:var(--c)}
 .rail-btn.app.on{background:var(--t);color:var(--c)}
 @media (max-width:720px){ .app-frame{min-height:calc(100dvh - 190px)} }
+/* đăng nhập & dữ liệu thật */
+.auth{position:fixed;inset:0;z-index:90;background:var(--ground);display:grid;place-items:center;padding:16px;overflow:auto}
+.auth-card{width:min(420px,100%);background:var(--card);border-radius:24px;padding:28px;box-shadow:0 24px 70px rgba(0,0,0,.18);display:flex;flex-direction:column}
+.auth-h{font-size:24px;margin:0;letter-spacing:-.015em}
+.auth-msg{background:var(--blue-t);color:var(--ink);border-radius:12px;padding:10px 12px;font-size:13px;margin-bottom:14px}
+.auth-msg.bad{background:var(--red-t);color:var(--red)}
+.save-dot{position:fixed;right:18px;bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:70;font-size:11.5px;padding:4px 10px;border-radius:999px;background:var(--card);color:var(--muted);border:1px solid var(--line);transition:opacity .3s}
+.save-dot.ok{color:var(--green-ink)} .save-dot.bad{color:var(--red);background:var(--red-t)} .save-dot.hide{opacity:0}
+.chat-img{display:block;max-width:min(320px,100%);max-height:260px;border-radius:12px;margin-top:6px;cursor:pointer;background:var(--chip)}
+button.file{width:100%;text-align:left;cursor:pointer}
+button.me{border:0;cursor:pointer}
 </style>
 </head>
 <body>
@@ -566,10 +577,13 @@ textarea.md{width:100%;min-height:320px;border:1px solid var(--line);border-radi
 <div class="modal-wrap" id="modal" hidden></div>
 <div class="toast" id="toast" role="status" hidden></div>
 
-<script src="js/core.js?v=2"></script>
-<script src="js/mod-sales.js?v=2"></script>
-<script src="js/mod-ops.js?v=2"></script>
-<script src="js/mod-money.js?v=2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.0/dist/umd/supabase.js"></script>
+<script src="/config.js"></script>
+<script src="js/core.js?v=3"></script>
+<script src="js/mod-sales.js?v=3"></script>
+<script src="js/mod-ops.js?v=3"></script>
+<script src="js/mod-money.js?v=3"></script>
+<script src="js/live.js?v=3"></script>
 <script>boot();</script>
 </body>
 </html>

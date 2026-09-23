@@ -109,6 +109,8 @@ function vinfo(v){
   if (isApp(v)){ const a = appOf(v); return a ? {label:a.name, icon:a.icon, group:'Ứng dụng', app:a} : null; }
   return VIEWS[v] || null;
 }
+// LIVE = kết nối Supabase (live.js gán khi đăng nhập); null = chế độ demo dữ liệu mẫu trong trình duyệt.
+let LIVE = null;
 const MOD = {}, AFTER = {}, ACT = {}, FORM = {}, INP = {}, CHG = {}, DROP = {}, DEL = {};
 const SEEDS = [], SEARCH = [], AI = [], AI_CHIPS = [], AI_SUGG = [];
 
@@ -149,15 +151,19 @@ function load(){
   if (!S.apps) S.apps = JSON.parse(JSON.stringify(DEFAULT_APPS));
   S.tabs = S.tabs.filter(vinfo);
 }
-function save(){ try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
+function save(){
+  if (LIVE){ LIVE.saveUi(); LIVE.sync(); return; }
+  try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {}
+}
 function log(text, c = 'purple'){ S.activity.unshift({t:Date.now(), text, c}); S.activity = S.activity.slice(0, 40); }
-const person = id => S.people.find(p => p.id === id) || {id, name:id || '—', role:'', team:'', c:'gray'};
+const allPeople = () => (S.profiles || []).concat(S.people || []);
+const person = id => allPeople().find(p => p.id === id) || {id, name:id ? 'Không rõ' : '—', role:'', team:'', c:'gray'};
 const initials = name => { const w = String(name).trim().split(/\s+/); return (w.length > 1 ? w[w.length - 2][0] + w[w.length - 1][0] : w[0].slice(0, 2)).toUpperCase(); };
 function av(id, s = 26){
   const p = person(id);
   return `<span class="av" title="${esc(p.name)}" style="width:${s}px;height:${s}px;font-size:${Math.round(s * .38)}px;background:${cv(p.c)}">${esc(initials(p.name))}</span>`;
 }
-const peopleOpts = (sel, blank) => (blank ? `<option value="">${blank}</option>` : '') + S.people.map(p => `<option value="${p.id}" ${p.id === sel ? 'selected' : ''}>${esc(p.name)} — ${esc(p.role)}</option>`).join('');
+const peopleOpts = (sel, blank) => (blank ? `<option value="">${blank}</option>` : '') + allPeople().map(p => `<option value="${p.id}" ${p.id === sel ? 'selected' : ''}>${esc(p.name)}${p.role ? ' — ' + esc(p.role) : ''}</option>`).join('');
 const opt = (list, sel) => list.map(x => { const [v, l] = Array.isArray(x) ? x : [x, x]; return `<option value="${esc(v)}" ${String(v) === String(sel) ? 'selected' : ''}>${esc(l)}</option>`; }).join('');
 const sub = (view, def) => S.sub[view] || def;
 
@@ -170,6 +176,7 @@ function subtabs(view, list, def){
   return `<div class="seg" role="tablist">${list.map(([k, l, n]) => `<button role="tab" class="${cur === k ? 'on' : ''}" data-act="sub" data-view="${view}" data-k="${k}">${l}${n ? `<span class="cnt">${n}</span>` : ''}</button>`).join('')}</div>`;
 }
 const head = (title, desc, actions = '') => `<div class="head-row"><div class="hello"><h1>${title}</h1>${desc ? `<p>${desc}</p>` : ''}</div>${actions ? `<div class="actions">${actions}</div>` : ''}</div>`;
+const emptyBox = (title, text, btn = '') => `<div class="card pad empty" style="display:flex;flex-direction:column;align-items:center;gap:10px;padding:40px 24px"><b style="color:var(--ink);font-size:15px">${title}</b><span>${text}</span>${btn}</div>`;
 const delBtn = kind => `<button type="button" class="btn danger" data-act="del" data-kind="${kind}">Xóa</button>`;
 const closeBtn = () => `<button type="button" class="icon-btn" data-act="modal-close" aria-label="Đóng">${ic('x')}</button>`;
 function monthCells(y, m){
@@ -243,9 +250,9 @@ function renderRail(){
   html += `<div class="rail-label extra">Cài đặt</div>
     <button class="rail-btn extra" data-act="palette" title="Tìm nhanh (Ctrl K)" aria-label="Tìm nhanh">${ic('search', 19)}</button>
     <button class="rail-btn extra" data-act="theme" title="Đổi giao diện sáng / tối" aria-label="Đổi giao diện sáng tối">${ic('moon', 19)}</button>
-    <button class="rail-btn extra" data-act="reset" title="Khôi phục dữ liệu mẫu" aria-label="Khôi phục dữ liệu mẫu">${ic('reset', 19)}</button>
+    ${LIVE ? '' : `<button class="rail-btn extra" data-act="reset" title="Khôi phục dữ liệu mẫu" aria-label="Khôi phục dữ liệu mẫu">${ic('reset', 19)}</button>`}
     <div class="spacer"></div>
-    <div class="me" title="${esc(person(S.me).name)} — ${esc(person(S.me).role)}">${initials(person(S.me).name)}</div>`;
+    <button class="me" data-act="me" title="${esc(person(S.me).name)} — ${LIVE ? 'Hồ sơ & mật khẩu' : 'chế độ demo'}" style="background:${cv(person(S.me).c || 'purple')}">${initials(person(S.me).name)}</button>`;
   $('#rail').innerHTML = html;
 }
 function renderTabs(){
@@ -278,9 +285,12 @@ function render(){
   renderTop();
   showApps();
   if (isApp(S.view)){ renderRail(); renderTabs(); save(); return; }
-  $('#view').innerHTML = MOD[S.view]();
+  const ae = document.activeElement, keep = ae && ae.id && /^(INPUT|TEXTAREA)$/.test(ae.tagName) && $('#view').contains(ae) ? {id:ae.id, v:ae.value, a:ae.selectionStart, b:ae.selectionEnd} : null;
+  try { $('#view').innerHTML = MOD[S.view](); }
+  catch (e){ console.error(e); $('#view').innerHTML = `<div class="card pad empty">Không hiển thị được trang này (${esc(e.message)}). <button class="btn sm" data-act="nav" data-v="dash">Về Tổng quan</button></div>`; }
+  if (keep){ const el = document.getElementById(keep.id); if (el){ el.value = keep.v; el.focus(); try { el.setSelectionRange(keep.a, keep.b); } catch (e) {} } }
   renderRail(); renderTabs(); renderTop();
-  if (AFTER[S.view]) AFTER[S.view]();
+  if (AFTER[S.view]) try { AFTER[S.view](); } catch (e) { console.error(e); }
   save();
 }
 function nav(v, subKey){
@@ -293,7 +303,7 @@ function nav(v, subKey){
 
 /* ============ modal / toast ============ */
 function showModal(html){ const w = $('#modal'); w.innerHTML = html; w.hidden = false; const f = w.querySelector('input:not([type=hidden]),select,textarea'); if (f) f.focus(); }
-function closeModal(){ $('#modal').hidden = true; $('#modal').innerHTML = ''; }
+function closeModal(){ $('#modal').hidden = true; $('#modal').innerHTML = ''; if (LIVE && LIVE.pending) LIVE.flush(); }
 function toast(t){ const el = $('#toast'); el.textContent = t; el.hidden = false; clearTimeout(toast.h); toast.h = setTimeout(() => el.hidden = true, 2600); }
 function copyText(text, okMsg){
   const done = () => toast(okMsg);
@@ -334,7 +344,7 @@ function renderAi(){
 }
 function aiAnswer(q){
   const s = q.toLowerCase();
-  for (const r of AI){ if (r.re.test(s)){ const out = r.fn(q, s); if (out) return out; } }
+  for (const r of AI){ if (r.re.test(s)){ let out = ''; try { out = r.fn(q, s); } catch (e) { out = 'Chưa đủ dữ liệu để trả lời câu này.'; } if (out) return out; } }
   return 'Tôi trả lời được về: <b>tiến độ & việc trễ</b>, <b>nhân công hôm nay</b>, <b>dòng tiền & hoá đơn quá hạn</b>, <b>pipeline khách hàng</b>, <b>bóc tách QS</b>, <b>điểm thưởng</b>, <b>tin chưa đọc</b>, <b>nội quy / quy trình</b>. Gõ <i>Tạo công việc: …</i> để thêm việc vào tiến độ dự án đang chọn.';
 }
 function aiAsk(q){
@@ -371,6 +381,7 @@ Object.assign(ACT, {
     resetArmed = false; S = seed(); render(); renderAi(); toast('Đã khôi phục dữ liệu mẫu');
   },
   'modal-close':() => closeModal(),
+  me:() => { if (LIVE) LIVE.profileModal(); else toast('Chế độ demo — dữ liệu mẫu lưu trong trình duyệt này'); },
   del:(el, d) => {
     if (armed !== el){ armed = el; el.textContent = 'Bấm lần nữa để xóa'; return; }
     armed = null; const f = el.closest('form, .modal');
@@ -472,9 +483,9 @@ DEL.app = id => { S.apps = S.apps.filter(a => a.id !== id); S.tabs = S.tabs.filt
 function boot(){
   try { const th = localStorage.getItem('sf-theme'); if (th) document.documentElement.dataset.theme = th; } catch (e) {}
   try { if (localStorage.getItem('sf-ai-hidden')) $('#frame').classList.add('ai-hidden'); } catch (e) {}
-  load();
   $('.ai-close').innerHTML = ic('x');
   $('#aiTools').innerHTML = [['gantt', 'Việc nào đang trễ tiến độ?', 'Hỏi việc trễ'], ['wallet', 'Dòng tiền 4 tuần tới thế nào?', 'Hỏi dòng tiền'], ['userclock', 'Nhân công hôm nay?', 'Hỏi nhân công']]
     .map(([i, q, l]) => `<button type="button" class="round" data-act="ai-fill" data-q="${esc(q)}" title="${l}" aria-label="${l}">${ic(i, 16)}</button>`).join('') + '<button class="send" type="submit">Gửi</button>';
-  render(); renderAi();
+  if (window.SF_CONFIG && window.supabase && typeof liveBoot === 'function') return liveBoot();
+  load(); render(); renderAi();
 }

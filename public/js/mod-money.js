@@ -210,7 +210,9 @@ function finTemplate(p){
 }
 const budState = b => { const r = b.s / b.b; return r > 1 ? ['Vượt NS','red'] : r >= .9 ? ['Sắp hết','yellow'] : ['Trong NS','green']; };
 MOD.fin = () => {
-  const p = proj(S.pid) || S.projects[0], f = S.fin[p.id];
+  const p = proj(S.pid) || S.projects[0];
+  if (!p) return noProjects();
+  const f = S.fin[p.id];
   const cur = sub('fin', 'overview');
   if (!f) return head('Tài chính', esc(p.name)) + `<div class="card pad empty">Dự án chưa có ngân sách. <button class="btn sm" data-act="setup-go" data-id="${p.id}">Thiết lập thi công</button></div>`;
   const st = finStats(p.id), over = f.budget.filter(b => b.s > b.b);
@@ -360,8 +362,9 @@ function prodMatch(p){
 }
 MOD.qs = () => {
   const cur = sub('qs', 'overview'), Q = S.qs, q = curQs();
+  if (!q && ['takeoff','quote','po'].includes(cur)) return head('QS — Bóc tách & Báo giá', '') + subtabs('qs', [['overview','Tổng quan'],['projects','Dự án'],['takeoff','Bóc tách chi phí'],['products','Danh sách sản phẩm'],['quote','Xuất báo giá'],['po','Mua hàng']], 'overview') + emptyBox('Chưa có hồ sơ bóc tách', 'Tạo hồ sơ QS đầu tiên để bắt đầu bóc tách theo phòng.', `<button class="btn" data-act="qs-new">${ic('plus', 15)}Tạo dự án QS</button>`);
   const tabs = subtabs('qs', [['overview','Tổng quan'],['projects','Dự án'],['takeoff','Bóc tách chi phí'],['products','Danh sách sản phẩm'],['quote','Xuất báo giá'],['po','Mua hàng', Q.po.filter(p => p.status === 'wait').length]], 'overview');
-  const qsSelect = `<select data-change="qs-cur" aria-label="Chọn hồ sơ bóc tách">${opt(Q.projects.map(x => [x.id, x.code + ' · ' + x.name]), q.id)}</select>`;
+  const qsSelect = q ? `<select data-change="qs-cur" aria-label="Chọn hồ sơ bóc tách">${opt(Q.projects.map(x => [x.id, x.code + ' · ' + x.name]), q.id)}</select>` : '';
   let body;
   if (cur === 'overview'){
     const brands = {};
@@ -416,7 +419,7 @@ MOD.qs = () => {
         <div><h4>Khoảng giá (nghìn đồng)</h4><div class="row"><input type="number" placeholder="Từ" value="${esc(F.min)}" data-change="pf-min" style="width:100%;height:34px;border:1px solid var(--line);border-radius:10px;padding:0 8px;background:var(--card)" aria-label="Giá từ">—<input type="number" placeholder="Đến" value="${esc(F.max)}" data-change="pf-max" style="width:100%;height:34px;border:1px solid var(--line);border-radius:10px;padding:0 8px;background:var(--card)" aria-label="Giá đến"></div></div>
       </div>
       <div class="stack">
-        <div class="row between" style="flex-wrap:wrap;gap:8px"><div class="search" style="flex:1;min-width:200px">${ic('search', 15)}<input id="pf-q" data-input="pf-q" value="${esc(F.q)}" placeholder="Tìm tên sản phẩm, thương hiệu" aria-label="Tìm sản phẩm"></div><span class="small muted">${list.length} sản phẩm phù hợp · thêm vào: <b style="color:var(--ink)">${esc(q.code)}</b></span></div>
+        <div class="row between" style="flex-wrap:wrap;gap:8px"><div class="search" style="flex:1;min-width:200px">${ic('search', 15)}<input id="pf-q" data-input="pf-q" value="${esc(F.q)}" placeholder="Tìm tên sản phẩm, thương hiệu" aria-label="Tìm sản phẩm"></div><span class="small muted">${list.length} sản phẩm phù hợp${q ? ` · thêm vào: <b style="color:var(--ink)">${esc(q.code)}</b>` : ''}</span></div>
         <div class="prods">${list.map(p => `<div class="card prod"><div class="thumb" style="--c:var(--purple);--t:var(--purple-t)">${ic('bulb', 34)}</div>
           <div class="row between"><span class="small muted">${esc(p.brand)} · ${esc(p.cat)}</span><button class="star ${p.fav ? 'on' : ''}" data-act="fav" data-id="${p.id}" aria-label="Yêu thích">${ic('star', 16)}</button></div>
           <b>${esc(p.name)}</b><div class="spec">${pill(p.w + 'W', 'gray')}${pill(p.k + 'K', 'gray')}${pill(p.a + '°', 'gray')}</div>
@@ -504,7 +507,7 @@ ACT['qs-new'] = () => showModal(`<form class="modal" data-form="qsp"><h3>Tạo d
   <label class="field">Gắn với dự án thi công<select id="qp-pid" name="pid">${opt([['','— Không gắn —'], ...S.projects.map(p => [p.id, p.name])], '')}</select></label>
   <div class="m-actions"><button type="button" class="btn ghost" data-act="modal-close">Huỷ</button><button class="btn" type="submit">Tạo & bắt đầu bóc tách</button></div></form>`);
 FORM.qsp = v => {
-  const n = Math.max(...S.qs.projects.map(x => +x.code.split('-')[1] || 0)) + 1;
+  const n = Math.max(0, ...S.qs.projects.map(x => +x.code.split('-')[1] || 0)) + 1;
   const q = {id:'q' + uid(), code:'QS-' + pad(n), pid:v.pid, name:v.name.trim(), client:v.client.trim(), phone:v.phone, addr:v.addr, created:todayISO(), status:'draft', quoted:false, rooms:[{id:uid(), name:'Phòng khách', items:[]}]};
   S.qs.projects.push(q); S.qs.cur = q.id; S.qs.room = 'all'; S.sub.qs = 'takeoff';
   log('Tạo hồ sơ bóc tách ' + q.code, 'purple'); closeModal(); render();
@@ -520,7 +523,7 @@ ACT['po-gen'] = () => {
   const q = curQs(), by = {};
   q.rooms.forEach(r => r.items.forEach(it => { const p = prod(it.p); (by[p.brand] = by[p.brand] || {}); by[p.brand][it.p] = (by[p.brand][it.p] || 0) + it.q; }));
   const brands = Object.keys(by); if (!brands.length){ toast('Hồ sơ chưa có sản phẩm để tạo đơn'); return; }
-  let n = Math.max(...S.qs.po.map(o => +o.code.split('-')[1] || 0));
+  let n = Math.max(0, ...S.qs.po.map(o => +o.code.split('-')[1] || 0));
   brands.forEach(b => S.qs.po.push({id:uid(), code:'PO-' + String(++n).padStart(4, '0'), qp:q.id, brand:b, items:Object.entries(by[b]).map(([p, qq]) => ({p, q:qq})), status:'wait', date:todayISO()}));
   log(`Tạo ${brands.length} đơn mua từ ${q.code}`, 'purple'); render(); toast(`Đã tạo ${brands.length} đơn mua theo thương hiệu`);
 };
@@ -551,6 +554,7 @@ function mdToHtml(src){
 MOD.wiki = () => {
   const W = S.wiki, q = (ui.wikiQ || '').toLowerCase();
   const pg = W.pages.find(p => p.id === W.cur) || W.pages[0];
+  if (!pg) return head('Wiki công ty', '', `<button class="btn" data-act="wiki-new">${ic('plus', 15)}Trang mới</button>`) + emptyBox('Wiki còn trống', 'Tạo trang đầu tiên: sổ tay nhân viên, nội quy, quy trình…');
   const match = p => !q || (p.title + ' ' + p.md).toLowerCase().includes(q);
   const tree = W.cats.map(c => { const ps = W.pages.filter(p => p.cat === c && match(p)); return ps.length ? `<div class="cat">${esc(c)}</div>` + ps.map(p => `<button class="pg ${p === pg ? 'on' : ''}" data-act="wiki-go" data-id="${p.id}">${esc(p.title)}</button>`).join('') : ''; }).join('');
   const {html, toc} = mdToHtml(pg.md);
@@ -584,7 +588,7 @@ FORM.wiki = (v, f) => {
   if (p) Object.assign(p, data); else { p = {id:'w' + uid(), ...data}; W.pages.push(p); }
   W.cur = p.id; log('Cập nhật wiki: ' + p.title, 'brown'); closeModal(); render(); toast('Đã lưu trang wiki');
 };
-DEL.wiki = id => { S.wiki.pages = S.wiki.pages.filter(p => p.id !== id); S.wiki.cur = S.wiki.pages[0].id; };
+DEL.wiki = id => { S.wiki.pages = S.wiki.pages.filter(p => p.id !== id); S.wiki.cur = (S.wiki.pages[0] || {}).id; };
 SEARCH.push(hit => S.wiki.pages.filter(p => hit(p.title + ' ' + p.md)).slice(0, 6).map(p => ({icon:'book', label:p.title, sub:'Wiki · ' + p.cat, run:() => { S.wiki.cur = p.id; nav('wiki'); }})));
 
 /* ================= trợ lý ================= */

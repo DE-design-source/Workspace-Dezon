@@ -22,4 +22,7 @@ npm start   # http://localhost:3000
 
 Không cần cài thư viện. Render: Build `npm install`, Start `npm start` (hoặc `node index.js`).
 
-> Bản hiện tại là prototype: dữ liệu mẫu lưu trong trình duyệt (localStorage) của từng người. Bước tiếp theo là nối Supabase để dùng chung dữ liệu, đăng nhập và chat realtime.
+## Hai chế độ
+- **Demo** (chưa khai báo `SUPABASE_ANON_KEY`): dữ liệu mẫu lưu trong trình duyệt.
+- **Dữ liệu thật** (Supabase): đăng nhập email + mật khẩu, quên / đổi mật khẩu qua email, chat realtime có tệp đính kèm, dữ liệu mọi module dùng chung, trang quản trị tài khoản.
+  Cài đặt: xem [SETUP-SUPABASE.md](SETUP-SUPABASE.md).
