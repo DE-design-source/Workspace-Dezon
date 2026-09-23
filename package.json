@@ -1,0 +1,12 @@
+{
+  "name": "workspace-dezon",
+  "version": "0.1.0",
+  "private": true,
+  "description": "SiteFlow — All-in-One Workspace (kinh doanh, dự án, chat, tiến độ, chấm công, tài chính, QS, wiki)",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "build": "echo \"no build step\""
+  },
+  "engines": { "node": ">=18" }
+}
