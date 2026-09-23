@@ -110,8 +110,10 @@ async function liveBoot(){
   }
   function showInit(){
     authView(`<h1 class="auth-h">Khởi tạo workspace</h1><p class="muted small" style="margin:4px 0 18px">Bạn là quản trị viên đầu tiên. Chọn cách bắt đầu — có thể xoá / sửa mọi thứ sau.</p>
-      <div class="stack"><button class="btn" id="initSample" style="height:44px">Dùng dữ liệu mẫu (dự án Riverside, pipeline, QS, wiki…)</button>
-      <button class="btn line" id="initEmpty" style="height:44px">Bắt đầu trống (giữ danh mục sản phẩm, wiki mẫu, quy trình nhiệm vụ)</button></div><div id="initMsg"></div>`);
+      <div class="stack">
+        <button class="init-opt" id="initEmpty"><span class="sq" style="--c:var(--green);--t:var(--green-t)">${ic('plus', 18)}</span><span><b>Bắt đầu trống</b><small>Dùng thật ngay. Giữ sẵn danh mục sản phẩm, wiki mẫu và quy trình nhiệm vụ.</small></span></button>
+        <button class="init-opt" id="initSample"><span class="sq" style="--c:var(--purple);--t:var(--purple-t)">${ic('grid', 18)}</span><span><b>Dùng dữ liệu mẫu</b><small>Để xem thử: dự án Riverside, pipeline khách hàng, bóc tách QS, wiki… Xoá được sau.</small></span></button>
+      </div><div id="initMsg"></div>`);
     const go = async sample => {
       shell.querySelectorAll('button').forEach(b => b.disabled = true);
       shell.querySelector('#initMsg').innerHTML = msg('Đang ghi dữ liệu…');
