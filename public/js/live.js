@@ -99,28 +99,65 @@ async function liveBoot(){
   const shell = document.createElement('div');
   shell.id = 'auth'; shell.className = 'auth';
   document.body.appendChild(shell);
-  const authView = (inner) => { shell.hidden = false; shell.innerHTML = `<div class="auth-card"><div class="row" style="gap:12px;margin-bottom:22px"><div class="logo" style="margin:0"><img src="/img/logo.png" alt="Dezon" width="40" height="40"></div><div><b style="font-size:16px">Dezon Workspace</b><div class="small muted">Không gian làm việc nội bộ</div></div></div>${inner}</div>`; const f = shell.querySelector('input'); if (f) f.focus(); };
+  // Trang đăng nhập hai nửa theo nhận diện dezon.vn: form bên trái, giới thiệu workspace bên phải.
+  const WORDMARK = 'https://dezon.vn/wp-content/uploads/2026/03/Dezon-2026-SVG-black.svg';
+  const HERO = 'https://dezon.vn/wp-content/uploads/2025/12/dks-house-mas-architecture-vietnam_6bnanner-4.jpg';
+  const TOUR = [['briefcase','Kinh doanh','Pipeline khách hàng, chuyển cơ hội thành dự án'],['building','Dự án','Hồ sơ, thiết lập thi công, luồng dữ liệu'],['chat','Chat nội bộ','Nhóm dự án, nhắn riêng, gửi tệp'],['gantt','Tiến độ','Gantt, mốc, nhiệm vụ & điểm thưởng'],['userclock','Chấm công','Theo công trường, duyệt ngoài vùng'],['wallet','Tài chính','Ngân sách, hoá đơn, dòng tiền'],['ruler','QS','Bóc tách, báo giá, mua hàng'],['book','Wiki','Sổ tay, nội quy, quy trình']];
+  const authView = (inner) => {
+    shell.hidden = false;
+    shell.innerHTML = `<div class="auth-split">
+      <section class="auth-left">
+        <header class="auth-brand"><img class="wordmark" src="${WORDMARK}" alt="DEZON" onerror="this.replaceWith(Object.assign(document.createElement('b'),{className:'wordmark-txt',textContent:'DEZON'}))"><span class="auth-tag">Workspace</span></header>
+        <div class="auth-form">${inner}</div>
+        <footer class="auth-foot">© ${new Date().getFullYear()} Dezon · Design And Build Data Zone · <a href="https://dezon.vn" target="_blank" rel="noopener">dezon.vn</a></footer>
+      </section>
+      <aside class="auth-right" aria-label="Giới thiệu Dezon Workspace">
+        <div class="ar-bg" style="background-image:url('${HERO}')"></div>
+        <div class="ar-inner">
+          <span class="ar-pill">${ic('sparkle', 13)} Tất cả trong một</span>
+          <h2>Toàn bộ công việc của Dezon,<br>ở một nơi.</h2>
+          <p class="ar-lead">Từ khách hàng tiềm năng đến bàn giao công trình — kinh doanh, dự án, tiến độ, tài chính và trao đổi nội bộ dùng chung một nguồn dữ liệu.</p>
+          <div class="ar-grid">${TOUR.map(([i, t, d]) => `<div class="ar-card"><span class="ar-ic">${ic(i, 16)}</span><b>${t}</b><small>${d}</small></div>`).join('')}</div>
+          <ol class="ar-steps"><li><b>Nhận email mời</b><span>từ quản trị viên, gửi tới email công ty</span></li><li><b>Đặt mật khẩu</b><span>bấm link trong email, đặt mật khẩu riêng</span></li><li><b>Bắt đầu làm việc</b><span>thấy đúng các mục theo vai trò của bạn</span></li></ol>
+          <div class="ar-trust">${ic('info', 14)} Phân quyền từng module · mỗi người chỉ thấy phần việc được giao</div>
+        </div>
+      </aside>
+    </div>`;
+    const f = shell.querySelector('.auth-form input:not([type=hidden])'); if (f) f.focus();
+    shell.querySelectorAll('[data-eye]').forEach(b => b.onclick = () => { const i = b.parentElement.querySelector('input'); const show = i.type === 'password'; i.type = show ? 'text' : 'password'; b.setAttribute('aria-label', show ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'); b.classList.toggle('on', show); });
+  };
   const msg = (t, bad) => `<div class="auth-msg ${bad ? 'bad' : ''}">${t}</div>`;
+  const EYE = '<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>';
+  const MAIL = '<rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="m3.5 7 8.5 6 8.5-6"/>';
+  const LOCK = '<rect x="4.5" y="10.5" width="15" height="10" rx="2.5"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/>';
+  const svg = (d, n = 17) => `<svg width="${n}" height="${n}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+  const inField = (label, id, name, type, extra = '', icon = MAIL, eye = false) => `<label class="af-label" for="${id}">${label}</label>
+    <div class="af-input">${svg(icon)}<input id="${id}" name="${name}" type="${type}" ${extra}>${eye ? `<button type="button" class="af-eye" data-eye aria-label="Hiện mật khẩu">${svg(EYE)}</button>` : ''}</div>`;
   function showLogin(note = '', bad = false){
-    authView(`<h1 class="auth-h">Đăng nhập</h1><p class="muted small" style="margin:4px 0 18px">Dùng email công ty và mật khẩu của bạn.</p>${note ? msg(note, bad) : ''}
-      <form id="loginF" class="stack" style="gap:14px"><label class="field">Email<input id="lg-email" name="email" type="email" autocomplete="username" required placeholder="ten@congty.vn"></label>
-      <label class="field">Mật khẩu<input id="lg-pass" name="password" type="password" autocomplete="current-password" required></label>
-      <button class="btn" type="submit" style="height:42px">Đăng nhập</button></form>
-      <button class="link" id="goForgot" style="margin-top:14px;align-self:center">Quên mật khẩu?</button>`);
+    authView(`<h1 class="auth-h">Đăng nhập<br>vào Workspace</h1><p class="auth-sub">Dùng email công ty và mật khẩu của bạn.</p>${note ? msg(note, bad) : ''}
+      <form id="loginF" class="af">
+        ${inField('Email công ty', 'lg-email', 'email', 'email', 'autocomplete="username" required placeholder="ten@dezon.vn"')}
+        <div class="af-row"><label class="af-label" for="lg-pass">Mật khẩu</label><button type="button" class="af-link" id="goForgot">Quên mật khẩu?</button></div>
+        <div class="af-input">${svg(LOCK)}<input id="lg-pass" name="password" type="password" autocomplete="current-password" required placeholder="••••••••"><button type="button" class="af-eye" data-eye aria-label="Hiện mật khẩu">${svg(EYE)}</button></div>
+        <button class="af-btn" type="submit">Đăng nhập ${ic('arrow', 16)}</button>
+      </form>
+      <div class="af-or"><span>Chưa có tài khoản?</span></div>
+      <p class="af-note">Tài khoản do quản trị viên tạo. Bạn sẽ nhận <b>email mời</b> tại hộp thư công ty — bấm link trong email để đặt mật khẩu.</p>`);
     shell.querySelector('#loginF').onsubmit = async e => {
-      e.preventDefault(); const fd = new FormData(e.target), btn = e.target.querySelector('button'); btn.disabled = true; btn.textContent = 'Đang đăng nhập…';
+      e.preventDefault(); const fd = new FormData(e.target), btn = e.target.querySelector('.af-btn'); btn.disabled = true; btn.textContent = 'Đang đăng nhập…';
       const {error} = await sb.auth.signInWithPassword({email:String(fd.get('email')).trim(), password:fd.get('password')});
       if (error) showLogin(/invalid/i.test(error.message) ? 'Email hoặc mật khẩu không đúng.' : /banned|disabled/i.test(error.message) ? 'Tài khoản đã bị khoá. Liên hệ quản trị viên.' : error.message, true);
     };
     shell.querySelector('#goForgot').onclick = () => showForgot();
   }
   function showForgot(note = '', bad = false){
-    authView(`<h1 class="auth-h">Quên mật khẩu</h1><p class="muted small" style="margin:4px 0 18px">Nhập email công ty, hệ thống sẽ gửi link đặt mật khẩu mới.</p>${note ? msg(note, bad) : ''}
-      <form id="forgotF" class="stack" style="gap:14px"><label class="field">Email<input id="fg-email" name="email" type="email" required placeholder="ten@congty.vn"></label>
-      <button class="btn" type="submit" style="height:42px">Gửi link đặt lại mật khẩu</button></form>
-      <button class="link" id="goLogin" style="margin-top:14px;align-self:center">← Quay lại đăng nhập</button>`);
+    authView(`<button class="af-back" id="goLogin">${ic('left', 15)} Quay lại đăng nhập</button>
+      <h1 class="auth-h">Quên mật khẩu</h1><p class="auth-sub">Nhập email công ty, hệ thống sẽ gửi link để bạn đặt mật khẩu mới.</p>${note ? msg(note, bad) : ''}
+      <form id="forgotF" class="af">${inField('Email công ty', 'fg-email', 'email', 'email', 'required placeholder="ten@dezon.vn"')}
+      <button class="af-btn" type="submit">Gửi link đặt lại mật khẩu ${ic('arrow', 16)}</button></form>
+      <p class="af-note">Không thấy email sau vài phút? Kiểm tra mục Spam, hoặc nhờ quản trị viên gửi lại.</p>`);
     shell.querySelector('#forgotF').onsubmit = async e => {
-      e.preventDefault(); const email = String(new FormData(e.target).get('email')).trim(); const btn = e.target.querySelector('button'); btn.disabled = true;
+      e.preventDefault(); const email = String(new FormData(e.target).get('email')).trim(); const btn = e.target.querySelector('.af-btn'); btn.disabled = true;
       const {error} = await sb.auth.resetPasswordForEmail(email, {redirectTo:location.origin + '/'});
       if (error) showForgot(/rate|seconds/i.test(error.message) ? 'Vừa gửi xong — hãy đợi một chút rồi thử lại.' : error.message, true);
       else showLogin(`Nếu <b>${esc(email)}</b> có tài khoản, email đặt lại mật khẩu đã được gửi. Mở email và bấm vào link.`);
@@ -128,10 +165,11 @@ async function liveBoot(){
     shell.querySelector('#goLogin').onclick = () => showLogin();
   }
   function showSetPassword(kind){
-    authView(`<h1 class="auth-h">${kind === 'invite' ? 'Tạo mật khẩu' : 'Đặt mật khẩu mới'}</h1><p class="muted small" style="margin:4px 0 18px">${kind === 'invite' ? 'Chào mừng bạn! Đặt mật khẩu để kích hoạt tài khoản.' : 'Nhập mật khẩu mới cho tài khoản của bạn.'}</p>
-      <form id="setPwF" class="stack" style="gap:14px"><label class="field">Mật khẩu mới (ít nhất 8 ký tự)<input id="sp-p1" name="p1" type="password" autocomplete="new-password" minlength="8" required></label>
-      <label class="field">Nhập lại mật khẩu<input id="sp-p2" name="p2" type="password" autocomplete="new-password" minlength="8" required></label>
-      <div id="spMsg"></div><button class="btn" type="submit" style="height:42px">Lưu mật khẩu & vào workspace</button></form>`);
+    authView(`<h1 class="auth-h">${kind === 'invite' ? 'Chào mừng bạn!' : 'Đặt mật khẩu mới'}</h1><p class="auth-sub">${kind === 'invite' ? 'Đặt mật khẩu để kích hoạt tài khoản Dezon Workspace của bạn.' : 'Nhập mật khẩu mới cho tài khoản của bạn.'}</p>
+      <form id="setPwF" class="af">
+        ${inField('Mật khẩu mới (ít nhất 8 ký tự)', 'sp-p1', 'p1', 'password', 'autocomplete="new-password" minlength="8" required', LOCK, true)}
+        ${inField('Nhập lại mật khẩu', 'sp-p2', 'p2', 'password', 'autocomplete="new-password" minlength="8" required', LOCK, true)}
+        <div id="spMsg"></div><button class="af-btn" type="submit">Lưu mật khẩu & vào workspace ${ic('arrow', 16)}</button></form>`);
     shell.querySelector('#setPwF').onsubmit = async e => {
       e.preventDefault(); const fd = new FormData(e.target);
       if (fd.get('p1') !== fd.get('p2')){ shell.querySelector('#spMsg').innerHTML = msg('Hai mật khẩu chưa khớp.', true); return; }
@@ -161,6 +199,8 @@ async function liveBoot(){
     if (L.isAdmin){ VIEWS.admin = {label:'Tài khoản', icon:'users', group:'Vận hành'}; }
     subscribe();
     render(); renderAi(); updateTitle();
+    let seen = false; try { seen = !!localStorage.getItem('sf-welcome-' + L.uid); } catch (e) {}
+    if (!seen) setTimeout(() => L.welcome(), 400);
   }
   function showInit(){
     authView(`<h1 class="auth-h">Khởi tạo workspace</h1><p class="muted small" style="margin:4px 0 18px">Bạn là quản trị viên đầu tiên. Chọn cách bắt đầu — có thể xoá / sửa mọi thứ sau.</p>
@@ -415,8 +455,27 @@ async function liveBoot(){
       <div class="row">${av(L.uid, 44)}<div><b>${esc(me.name)}</b><div class="small muted">${esc(me.email)}${me.isAdmin ? ' · Quản trị viên' : ''}</div></div></div>
       <div class="row2"><label class="field">Họ tên<input id="mp-name" name="name" required value="${esc(me.name)}"></label><label class="field">Chức danh<input id="mp-title" name="title" value="${esc(me.role)}"></label></div>
       <div class="row2"><label class="field">Phòng ban / đội<input id="mp-team" name="team" value="${esc(me.team)}"></label><label class="field">Màu đại diện<select id="mp-color" name="color">${opt(['purple','blue','green','yellow','orange','pink','brown'].map(c => [c, c]), me.c)}</select></label></div>
-      <div class="m-actions"><button type="button" class="btn danger" data-act="logout">Đăng xuất</button><button type="button" class="btn line" data-act="change-pw">Đổi mật khẩu</button><button class="btn" type="submit">Lưu hồ sơ</button></div></form>`);
+      <div class="m-actions"><button type="button" class="btn danger" data-act="logout">Đăng xuất</button><button type="button" class="btn ghost" data-act="welcome">Giới thiệu</button><button type="button" class="btn line" data-act="change-pw">Đổi mật khẩu</button><button class="btn" type="submit">Lưu hồ sơ</button></div></form>`);
   };
+  // Màn hình chào mừng: tổng quan những gì tài khoản này dùng được.
+  L.welcome = () => {
+    try { localStorage.setItem('sf-welcome-' + L.uid, '1'); } catch (e) {}
+    const me = S.profiles.find(p => p.id === L.uid) || {name:''};
+    const roleLabel = me.isAdmin ? 'Quản trị viên' : (ROLES[me.roleKey] || ROLES.custom).label;
+    const mods = [['dash', 'Tổng quan', 'Tiến độ, nhân công, dòng tiền và việc cần xử lý trong ngày', 'edit'], ['chat', 'Chat', 'Nhắn riêng, nhóm dự án, gửi tệp — cả công ty', 'edit']]
+      .concat(PERM_MODS.map(([k, l, d]) => [k, l, d, perm(k)])).filter(m => m[3] !== 'none');
+    const off = PERM_MODS.filter(([k]) => perm(k) === 'none');
+    showModal(`<div class="modal wide welcome"><div class="wl-head"><div><span class="ar-pill dark">${ic('sparkle', 13)} Chào mừng đến Dezon Workspace</span><h3 style="margin-top:12px">Xin chào, ${esc(me.name.split(' ').pop())} 👋</h3>
+        <p class="muted" style="margin:6px 0 0">Vai trò của bạn: <b style="color:var(--ink)">${esc(roleLabel)}</b>. Đây là những gì bạn dùng được — bấm vào một mục để mở.</p></div>${closeBtn()}</div>
+      <div class="wl-grid">${mods.map(([k, l, d, lv]) => `<button class="wl-card" data-act="wl-go" data-v="${k}"><span class="sq" style="--c:var(--ink);--t:var(--chip)">${ic((VIEWS[k] || {icon:'grid'}).icon, 17)}</span><span><b>${l} ${lv === 'view' ? '<span class="lv lv-view">Chỉ xem</span>' : ''}</b><small>${d}</small></span></button>`).join('')}</div>
+      ${off.length ? `<p class="small muted">Chưa được cấp: ${off.map(m => m[1]).join(', ')}. Cần dùng? Nhắn quản trị viên trong Chat.</p>` : ''}
+      <div class="wl-tips"><div>${ic('search', 16)}<span><b>Tìm nhanh</b> — nhấn <kbd>Ctrl</kbd> <kbd>K</kbd> để mở bất kỳ dự án, khách hàng, trang wiki</span></div>
+        <div>${ic('sparkle', 16)}<span><b>Dezbot</b> — trợ lý bên phải trả lời về tiến độ, dòng tiền, việc trễ…</span></div>
+        <div>${ic('bell', 16)}<span><b>Thông báo</b> — bật thông báo trong Chat để không lỡ tin nhắn</span></div></div>
+      <div class="m-actions"><button class="btn" data-act="modal-close">Bắt đầu làm việc ${ic('arrow', 15)}</button></div></div>`);
+  };
+  ACT['wl-go'] = (el, d) => { closeModal(); nav(d.v); };
+  ACT['welcome'] = () => { closeModal(); L.welcome(); };
   FORM['my-profile'] = async v => {
     const {error} = await sb.from('profiles').update({name:v.name.trim(), title:v.title.trim(), team:v.team.trim(), color:v.color}).eq('id', L.uid);
     if (error) return toast('Không lưu được: ' + error.message);
