@@ -746,6 +746,11 @@ table.matrix th.c,table.matrix td.c{text-align:center}
 @media (max-width:1180px){ .frame,.frame.ai-hidden{grid-template-columns:var(--rail-w) minmax(0,1fr)} }
 @media (max-width:1000px){ .quote-layout,.set-layout{grid-template-columns:minmax(0,1fr)} .set-nav{position:static;flex-direction:row;overflow-x:auto} .set-nav button{white-space:nowrap} .theme-cards{grid-template-columns:minmax(0,1fr)} }
 @media (max-width:720px){ .frame.rail-open .rl,.rail .rl{display:none} .rail-top,.rail-sep,.rail-me{display:none} .frame.rail-open .rail{padding:8px 12px calc(8px + env(safe-area-inset-bottom,0px))} .frame.rail-open .rail-btn{width:38px;padding:0;justify-content:center} }
+/* Bỏ thanh tab trang đang mở + bỏ viền nền ngoài: app tràn màn hình */
+body{padding:0}
+.frame{border-radius:0;grid-template-rows:minmax(0,1fr);padding:12px 12px 12px 0}
+.tabs{display:none}
+.rail,.main,.ai{grid-row:1}
 </style>
 <link rel="stylesheet" href="css/feed.css?v=10">
 <link rel="stylesheet" href="css/desk.css?v=10">
