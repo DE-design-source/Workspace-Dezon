@@ -1,0 +1,44 @@
+/* Bàn làm việc */
+.desk-tasks{display:flex;flex-direction:column;gap:2px;max-height:460px;overflow:auto}
+.desk-task{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:12px}
+.desk-task:hover{background:var(--hover)}
+.desk-task input{width:17px;height:17px;accent-color:var(--green);flex:0 0 auto;cursor:pointer}
+.desk-task > button{flex:1;min-width:0;text-align:left}
+.desk-task b{display:block;font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis}
+.desk-task small{display:block;font-size:11.5px;color:var(--muted)}
+.desk-task.done b{text-decoration:line-through;color:var(--muted)}
+.desk-tiles{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.desk-tile{background:var(--t);border-radius:14px;padding:12px 14px}
+.desk-tile b{display:block;font-size:22px;font-weight:600;color:var(--c);font-variant-numeric:tabular-nums}
+.desk-tile small{font-size:12px;color:var(--ink-2)}
+.desk-kv{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--line);font-size:13px}
+.desk-kv:first-of-type{border-top:0}
+.desk-kv span{color:var(--ink-2)}
+.desk-kv b,.desk-kv .link{font-weight:600;font-variant-numeric:tabular-nums}
+.desk-types{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.desk-type{display:flex;align-items:center;gap:12px;padding:16px;text-align:left;color:var(--ink)}
+.desk-type:hover{border-color:var(--c);background:var(--t)}
+.desk-type .sq{background:var(--t);color:var(--c)}
+.desk-type b{display:block;font-size:14px;font-weight:600}
+.desk-type small{display:block;font-size:12px;color:var(--muted);margin-top:2px}
+.desk-type > svg{margin-left:auto;color:var(--c);flex:0 0 auto}
+.desk-req .end{gap:8px}
+.desk-steps{display:inline-flex;border-radius:999px;overflow:hidden;border:1px solid var(--line)}
+.desk-steps i{font-style:normal;font-size:10.5px;font-weight:600;padding:3px 8px;background:var(--chip);color:var(--muted);white-space:nowrap}
+.desk-steps i + i{border-left:1px solid var(--line)}
+.desk-steps i.approved{background:var(--green-t);color:var(--green-ink)}
+.desk-steps i.waiting{background:var(--yellow-t);color:var(--yellow-ink)}
+.desk-steps i.rejected{background:var(--red-t);color:var(--red)}
+.desk-appr{display:flex;flex-direction:column;gap:8px}
+.desk-appr label{display:grid;grid-template-columns:24px minmax(0,1fr) auto;align-items:center;gap:8px}
+.desk-appr input{min-height:38px;border:1px solid var(--line);border-radius:12px;padding:0 12px;background:var(--card);color:var(--ink);font-size:13.5px;width:100%}
+.desk-appr small{color:var(--muted);font-size:11.5px;white-space:nowrap}
+.desk-appr-n{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;background:var(--chip);color:var(--ink-2);font-size:11px;font-weight:600;flex:0 0 auto}
+.desk-dl{display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px 16px;font-size:13px}
+.desk-dl span{color:var(--muted)}
+.desk-dl div{overflow-wrap:anywhere}
+.desk-apr{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:12px;background:var(--hover);font-size:13px}
+.desk-apr.approved .desk-appr-n{background:var(--green);color:#fff}
+.desk-apr.waiting .desk-appr-n{background:var(--yellow);color:#1a1300}
+.desk-apr.rejected .desk-appr-n{background:var(--red);color:#fff}
+@media (max-width:560px){ .desk-appr label{grid-template-columns:24px minmax(0,1fr)} .desk-appr small{grid-column:2} .desk-req .desk-steps{display:none} }

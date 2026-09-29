@@ -1,0 +1,7 @@
+/* qs */
+/* In báo giá: chỉ in chứng từ #quoteDoc */
+@media print{
+  body:has(#quoteDoc) *{visibility:hidden}
+  body:has(#quoteDoc) #quoteDoc, body:has(#quoteDoc) #quoteDoc *{visibility:visible}
+  body:has(#quoteDoc) #quoteDoc{position:absolute;left:0;top:0;width:100%;max-width:none;border:0;box-shadow:none}
+}

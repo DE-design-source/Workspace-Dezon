@@ -1,0 +1,30 @@
+/* HR — chấm công, hồ sơ, bảng lương */
+.hr-bar{align-items:center;flex-wrap:wrap;gap:8px}
+.hr-date{display:inline-flex;align-items:center;gap:7px;font-weight:500;font-size:13.5px;padding:0 4px}
+.hr-sel{height:32px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);padding:0 8px;font-size:12.5px;max-width:100%}
+.hr-sel.sm{height:28px;font-size:12px;flex:1;min-width:0}
+.hr-kpi-link{text-align:left;cursor:pointer}
+.hr-kpi-link:hover{border-color:var(--muted)}
+.hr-sites{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.hr-site{display:flex;flex-direction:column;gap:8px;text-align:left;width:100%}
+.hr-site:not(:disabled):hover{border-color:var(--muted)}
+.hr-site:disabled{cursor:default;opacity:1}
+.hr-site.warn{border-color:var(--red)}
+.hr-site-n{font-size:13px;color:var(--muted)}
+.hr-site-n b{font-size:20px;color:var(--ink);font-weight:600}
+.hr-days{gap:8px;min-width:120px}
+.hr-days .bar{flex:1}
+.hr-req{border-color:var(--orange)}
+.hr-callout{display:flex;gap:10px;align-items:flex-start;background:var(--orange-t);border-radius:12px;padding:12px 14px;font-size:13px}
+.hr-note{width:100%;border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--card);color:var(--ink);resize:vertical;font:inherit}
+.hr-phone .sq{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:var(--chip);color:var(--ink-2);flex:0 0 auto}
+.hr-phone .sq.hr-ok{background:var(--green-t);color:var(--green-ink)}
+.hr-phone .row{gap:10px}
+.hr-in{color:var(--green-ink);display:inline-flex;align-items:center;gap:4px;font-weight:500}
+.hr-out{color:var(--red);font-weight:500}
+.hr-geo{width:44px;height:44px;border-radius:50%;border:2px dashed var(--green);display:grid;place-items:center;flex:0 0 auto;background:var(--green-t)}
+.hr-geo i{width:10px;height:10px;border-radius:50%;background:var(--blue);box-shadow:0 0 0 4px var(--blue-t)}
+.hr-punch{height:48px;width:100%;font-size:14px;background:var(--green);color:#fff}
+.hr-punch.out{background:var(--orange)}
+.hr-hist{padding:8px 0;border-bottom:1px solid var(--line)}
+.hr-hist svg{color:var(--green-ink)}

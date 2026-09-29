@@ -1,0 +1,30 @@
+/* Sản xuất — xưởng mộc (tiền tố px-) */
+.px-srow{display:flex;justify-content:space-between;gap:10px;font-size:12.5px;margin-top:4px}
+.px-srow small{color:var(--muted);white-space:nowrap}
+.px-code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;letter-spacing:.02em}
+.px-board{grid-auto-columns:minmax(230px,240px)}
+.px-board .col{min-height:160px}
+.px-board .tcard{text-align:left}
+.px-meta{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:12.5px;color:var(--ink-2)}
+.px-meta b{font-weight:500;color:var(--ink)}
+.px-cms{max-height:260px;overflow:auto;gap:8px}
+.px-cmform{display:flex;gap:10px;align-items:flex-start}
+.px-cmform textarea{width:100%;border:1px solid var(--line);border-radius:12px;padding:9px 12px;background:var(--card);color:var(--ink);font:inherit;font-size:13px;resize:vertical;min-height:44px}
+.px-cmform textarea:focus{outline:2px solid var(--purple);outline-offset:-1px}
+.px-dd{position:absolute;left:0;right:0;top:100%;margin-top:4px;background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:4px;z-index:5;display:flex;flex-direction:column;max-height:220px;overflow:auto}
+.px-dd[hidden]{display:none}
+.px-dd button{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:8px;font-size:13px;color:var(--ink);text-align:left;min-width:0}
+.px-dd button:hover,.px-dd button.on{background:var(--hover)}
+.px-tagfield{position:relative}
+.px-tags{display:flex;flex-wrap:wrap;gap:6px;align-items:center;min-height:40px;border:1px solid var(--line);border-radius:12px;padding:5px 8px;background:var(--card)}
+.px-tags:focus-within{outline:2px solid var(--purple);outline-offset:-1px}
+.px-chips{display:contents}
+.px-tags .pill button{margin-left:2px;font-size:13px;line-height:1;color:inherit;opacity:.7}
+.px-tags .pill button:hover{opacity:1}
+.field .px-tags input{border:0;outline:0;min-height:28px;padding:0 4px;flex:1;min-width:140px;width:auto}
+.field .px-tags input:focus{outline:0}
+.px-num{display:flex;flex-direction:column;align-items:center;min-width:92px;flex:0 0 auto}
+.px-num b{font-size:16px;font-weight:600}
+.px-num small{text-align:center}
+.px-mgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+@media (max-width:640px){.px-num{min-width:64px}.px-num small{font-size:10.5px}}

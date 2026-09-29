@@ -2,17 +2,20 @@
 
 Không gian làm việc tất cả trong một cho công ty xây dựng / nội thất:
 
-| Module | Chức năng |
+Chức năng & logic dựng lại theo mockup `SiteFlow-UI` (17 màn hình), giao diện Dezon.
+
+| Module | File |
 |---|---|
-| Tổng quan | Tiến độ vs kế hoạch, nhân công hôm nay, tồn quỹ, cảnh báo, lịch mốc & thu chi |
-| Kinh doanh | Pipeline 7 giai đoạn (kéo thả), phễu bán hàng, form khách hàng 3 bước; chuyển sang "Dự án" tự tạo hồ sơ dự án |
-| Dự án | Danh sách, thiết lập thi công (tự khởi tạo QS, Gantt, chấm công, tài chính, nhóm chat), luồng dữ liệu |
-| Chat | Nhóm theo dự án, tin nhắn riêng, gửi tệp, Dezbot cảnh báo tự động |
-| Quản lý dự án | Gantt (tuần/tháng, đường găng, mốc, thu/chi, bình luận) + Nhiệm vụ game hoá, đổi quà, bảng xếp hạng |
-| Chấm công | Theo ngày / nhân viên, duyệt ngoài vùng, giao diện mobile chấm công vào/ra |
-| Tài chính | Ngân sách theo hạng mục, hoá đơn & công nợ, dự báo dòng tiền 8 tuần |
-| QS | Bóc tách theo phòng, danh mục sản phẩm có bộ lọc, báo giá, đơn mua hàng |
-| Wiki | Sổ tay, nội quy, quy trình — soạn thảo dạng markdown |
+| Newsfeed · Bàn làm việc · Lịch | `mod-feed.js` · `mod-desk.js` · `mod-cal.js` |
+| Marketing · Kinh doanh | `mod-mkt.js` · `mod-sales.js` |
+| Chat | `mod-chat.js` (+ realtime trong `live.js`) |
+| Quản lý dự án (danh sách, thiết lập thi công, Gantt, nhiệm vụ, luồng dữ liệu) | `mod-pm.js` |
+| HR (chấm công, hồ sơ, lương) · Cài đặt · Wiki | `mod-hr.js` · `mod-settings.js` · `mod-wiki.js` |
+| Tài chính · QS · Mua hàng | `mod-fin.js` · `mod-qs.js` · `mod-po.js` |
+| Sản xuất (xưởng mộc) | `mod-prod.js` |
+| Nhiệm vụ & điểm thưởng dùng chung | `mod-quest.js` |
+
+Mỗi module khai báo dữ liệu đồng bộ bằng `syncCol()`; SQL phân quyền sinh bằng `node scripts/gen-perms-sql.js > supabase/migration-004-rebuild.sql`.
 
 ## Chạy
 

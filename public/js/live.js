@@ -2,35 +2,12 @@
 
 const FIXED_CONVS = ['00000000-0000-0000-0000-000000000b07', '00000000-0000-0000-0000-000000000001'];
 const BOT_CONV = FIXED_CONVS[0];
-// Dữ liệu module ↔ bảng records. array: mỗi phần tử 1 dòng (theo id) · map: mỗi khoá 1 dòng · single: cả khối 1 dòng.
-const SYNC = [
-  ['projects', 'array', () => S.projects, v => S.projects = v],
-  ['leads', 'array', () => S.leads, v => S.leads = v],
-  ['people', 'array', () => S.people, v => S.people = v],
-  ['gantt', 'map', () => S.gantt, v => S.gantt = v],
-  ['fin', 'map', () => S.fin, v => S.fin = v],
-  ['quest', 'single', () => S.quest, v => S.quest = v],
-  ['att', 'single', () => S.att, v => S.att = v],
-  ['qs_projects', 'array', () => S.qs.projects, v => S.qs.projects = v],
-  ['qs_products', 'array', () => S.qs.products, v => S.qs.products = v],
-  ['qs_po', 'array', () => S.qs.po, v => S.qs.po = v],
-  ['qs_settings', 'single', () => ({vat:S.qs.vat}), v => S.qs.vat = v.vat],
-  ['wiki_pages', 'array', () => S.wiki.pages, v => S.wiki.pages = v],
-  ['wiki_cats', 'single', () => ({cats:S.wiki.cats}), v => S.wiki.cats = v.cats],
-  ['activity', 'single', () => ({list:S.activity}), v => S.activity = v.list || []],
-  ['apps', 'single', () => ({list:S.apps}), v => S.apps = v.list || []],
-  ['quest_sales', 'single', () => S.quest_sales, v => S.quest_sales = v],
-  ['quest_mkt', 'single', () => S.quest_mkt, v => S.quest_mkt = v],
-  ['mkt_catalog', 'array', () => S.mkt.catalog, v => S.mkt.catalog = v],
-  ['mkt_campaigns', 'array', () => S.mkt.campaigns, v => S.mkt.campaigns = v],
-  ['hr_staff', 'array', () => S.hr.staff, v => S.hr.staff = v],
-  ['hr_pay', 'single', () => ({paid:S.hr.paid || {}}), v => S.hr.paid = v.paid || {}],
-  ['settings', 'single', () => S.settings, v => S.settings = v]
-];
+// Dữ liệu module ↔ bảng records: mỗi module tự khai báo bằng syncCol() (core.js) → SYNC_REG.
+const SYNC = SYNC_REG;
 // Mẫu vai trò: áp nhanh rồi chỉnh riêng từng module.
 const ROLES = {
   admin:{label:'Quản trị viên', admin:true},
-  director:{label:'Ban giám đốc', perms:{mkt:'edit', sales:'edit', projects:'edit', pm:'edit', att:'edit', hr:'edit', fin:'edit', qs:'edit', po:'edit', wiki:'edit', apps:'edit'}},
+  director:{label:'Ban giám đốc', perms:{mkt:'edit', sales:'edit', projects:'edit', pm:'edit', att:'edit', hr:'edit', fin:'edit', qs:'edit', po:'edit', prod:'edit', wiki:'edit', apps:'edit'}},
   pm:{label:'Quản lý dự án', perms:{mkt:'none', sales:'view', projects:'edit', pm:'edit', att:'edit', hr:'none', fin:'view', qs:'edit', po:'edit', wiki:'edit', apps:'view'}},
   marketing:{label:'Marketing', perms:{mkt:'edit', sales:'view', projects:'view', pm:'none', att:'none', hr:'none', fin:'none', qs:'none', po:'none', wiki:'view', apps:'view'}},
   sales:{label:'Kinh doanh', perms:{mkt:'view', sales:'edit', projects:'view', pm:'view', att:'none', hr:'none', fin:'none', qs:'view', po:'none', wiki:'view', apps:'view'}},
@@ -39,56 +16,23 @@ const ROLES = {
   site:{label:'Kỹ thuật / Công trường', perms:{mkt:'none', sales:'none', projects:'view', pm:'edit', att:'edit', hr:'none', fin:'none', qs:'view', po:'view', wiki:'view', apps:'view'}},
   hr:{label:'Nhân sự', perms:{mkt:'none', sales:'none', projects:'view', pm:'view', att:'edit', hr:'edit', fin:'none', qs:'none', po:'none', wiki:'edit', apps:'none'}},
   staff:{label:'Nhân viên', perms:{mkt:'none', sales:'none', projects:'none', pm:'view', att:'none', hr:'none', fin:'none', qs:'none', po:'none', wiki:'view', apps:'view'}},
+  production:{label:'Xưởng sản xuất', perms:{mkt:'none', sales:'none', projects:'view', pm:'view', att:'none', hr:'none', fin:'none', qs:'view', po:'view', prod:'edit', wiki:'view', apps:'none'}},
   custom:{label:'Tuỳ chỉnh'}
 };
 const LEVELS = [['none','Không'],['view','Xem'],['edit','Sửa']];
-// Giống hàm can_read_record / can_write_record trong migration-002 (máy chủ mới là nơi chặn thật).
-function colRead(col, P){
-  if (['activity','people','wiki_cats','qs_settings','apps','settings'].includes(col)) return true;
-  if (col === 'leads' || col === 'quest_sales') return P('sales') !== 'none';
-  if (col === 'quest_mkt' || col.startsWith('mkt_')) return P('mkt') !== 'none';
-  if (col.startsWith('hr_')) return P('hr') !== 'none';
-  if (col === 'qs_po') return P('po') !== 'none' || P('qs') !== 'none';
-  if (col === 'projects') return ['projects','pm','fin','att','qs','sales'].some(m => P(m) !== 'none');
-  if (col === 'gantt' || col === 'quest') return P('pm') !== 'none';
-  if (col === 'att') return P('att') !== 'none';
-  if (col === 'fin') return P('fin') !== 'none';
-  if (col.startsWith('qs_')) return P('qs') !== 'none';
-  if (col.startsWith('wiki_')) return P('wiki') !== 'none';
-  return false;
+// Giống can_read_record / can_write_record trong SQL (máy chủ mới là nơi chặn thật).
+// rule: 'all' | 'admin' | ['perm', ...] — đọc khi có quyền ≥ xem, ghi khi có quyền sửa ở một trong các module.
+function ruleOk(rule, P, need){
+  if (rule === 'all') return true;
+  if (rule === 'admin') return !!(LIVE && LIVE.isAdmin);
+  return (rule || []).some(m => need === 'view' ? P(m) !== 'none' : P(m) === 'edit');
 }
-function colWrite(col, P){
-  const e = m => P(m) === 'edit';
-  switch (col){
-    case 'activity': return true;
-    case 'people': return e('att') || e('projects') || e('pm') || e('hr');
-    case 'leads': case 'quest_sales': return e('sales');
-    case 'quest_mkt': case 'mkt_catalog': case 'mkt_campaigns': return e('mkt');
-    case 'hr_staff': case 'hr_pay': return e('hr');
-    case 'qs_po': return e('po') || e('qs');
-    case 'settings': return !!(LIVE && LIVE.isAdmin);
-    case 'projects': return e('projects') || e('sales');
-    case 'gantt': return e('pm') || e('projects');
-    case 'quest': return e('pm');
-    case 'att': return e('att') || e('projects');
-    case 'fin': return e('fin') || e('projects') || e('po');
-    case 'qs_projects': return e('qs') || e('projects');
-    case 'apps': return e('apps');
-  }
-  if (col.startsWith('qs_')) return e('qs');
-  if (col.startsWith('wiki_')) return e('wiki');
-  return false;
-}
-// Dữ liệu "trống" dùng làm nền: không để lọt dữ liệu mẫu vào workspace thật.
+const colRead = (col, P) => { const r = SYNC_REG.find(x => x.name === col); return !!r && ruleOk(r.read, P, 'view'); };
+const colWrite = (col, P) => { const r = SYNC_REG.find(x => x.name === col); return !!r && ruleOk(r.write, P, 'edit'); };
+// Dữ liệu "trống" dùng làm nền: bộ dữ liệu nghiệp vụ (có empty) để trống; danh mục / mẫu giữ nguyên.
 function blankState(){
-  const s0 = seed();
-  Object.assign(s0, {projects:[], leads:[], people:[], gantt:{}, fin:{}, activity:[]});
-  s0.att = {sites:[], rec:[], approvals:[], week:[], mine:{p:'', site:'', in:null, out:null, task:'', weekMin:0, hist:[]}};
-  s0.qs.projects = []; s0.qs.po = [];
-  const blankQ = q => ({...q, pid:'', player:'', pts:{}, redeems:[], base:0, steps:q.steps.map(st => ({...st, tasks:st.tasks.map(t => ({...t, done:false, by:'', date:''}))}))});
-  s0.quest_sales = blankQ(s0.quest_sales); s0.quest_mkt = blankQ(s0.quest_mkt);
-  s0.mkt.campaigns = []; s0.hr = {staff:[], paid:{}};
-  s0.quest = {...s0.quest, pid:'', player:'', streak:0, lastSafety:'', pts:{}, redeems:[], base:0, steps:s0.quest.steps.map(st => ({...st, tasks:st.tasks.map(t => ({...t, done:false, by:'', date:''}))}))};
+  const s0 = seed(), saved = S; S = s0;
+  try { SYNC_REG.forEach(r => { if (r.empty) r.set(r.empty()); }); } finally { S = saved; }
   return s0;
 }
 const UI_KEYS = ['view', 'tabs', 'pid', 'sub', 'ai', 'cv', 'seenAct'];
@@ -231,7 +175,7 @@ async function liveBoot(){
       const s0 = sample ? seed() : blankState();
       const saved = S; S = s0;
       const rows = [];
-      SYNC.forEach(([col, kind, get]) => Object.entries(toRecs(kind, get())).forEach(([id, data]) => rows.push({collection:col, id, data})));
+      SYNC.forEach(({name:col, kind, get}) => Object.entries(toRecs(kind, get())).forEach(([id, data]) => rows.push({collection:col, id, data})));
       S = saved;
       for (let i = 0; i < rows.length; i += 200){
         const {error} = await sb.from('records').upsert(rows.slice(i, i + 200));
@@ -266,7 +210,7 @@ async function liveBoot(){
     const byCol = {};
     recs.data.forEach(r => (byCol[r.collection] = byCol[r.collection] || []).push(r));
     L.hasData = recs.data.length > 0;
-    SYNC.forEach(([col, kind, , set]) => {
+    SYNC.forEach(({name:col, kind, set}) => {
       const rows = byCol[col] || [];
       L.snap[col] = {};
       rows.forEach(r => L.snap[col][r.id] = stable(r.data));
@@ -277,7 +221,7 @@ async function liveBoot(){
       else if (kind === 'map') set(Object.fromEntries(rows.map(r => [r.id, r.data])));
       else if (rows[0]) set(rows[0].data);
     });
-    if (!S.projects.some(p => p.id === S.pid)) S.pid = (S.projects[0] || {}).id;
+    if (!(S.projects || []).some(p => p.id === S.pid)) S.pid = ((S.projects || [])[0] || {}).id;
     await loadChat();
   }
   const mapProfile = p => ({id:p.id, name:p.name || p.email, role:p.title || '', team:p.team || '', c:p.color || 'blue', email:p.email, isAdmin:p.is_admin, active:p.active, account:true, roleKey:p.role || 'staff', perms:p.perms || {}});
@@ -378,7 +322,7 @@ async function liveBoot(){
   L.sync = () => { if (!L.ready) return; clearTimeout(L.timer); L.timer = setTimeout(flushSync, 350); };
   async function flushSync(){
     const ups = [], dels = [], denied = [];
-    SYNC.forEach(([col, kind, get, set]) => {
+    SYNC.forEach(({name:col, kind, get, set}) => {
       const cur = toRecs(kind, get()), snap = L.snap[col] || (L.snap[col] = {});
       if (!colWrite(col, L.perm)){
         // chỉ có quyền xem: đưa dữ liệu về như trên máy chủ
@@ -417,8 +361,8 @@ async function liveBoot(){
     clearTimeout(el._t); if (!on && !err) el._t = setTimeout(() => el.className = 'save-dot hide', 1200);
   }
   function applyRecord(ev, row){
-    const spec = SYNC.find(s => s[0] === row.collection); if (!spec) return;
-    const [col, kind, get, set] = spec, snap = L.snap[col] || (L.snap[col] = {});
+    const spec = SYNC.find(s => s.name === row.collection); if (!spec) return;
+    const {name:col, kind, get, set} = spec, snap = L.snap[col] || (L.snap[col] = {});
     if (ev === 'DELETE'){
       if (!(row.id in snap)) return;
       delete snap[row.id];
@@ -480,7 +424,7 @@ async function liveBoot(){
     try { localStorage.setItem('sf-welcome-' + L.uid, '1'); } catch (e) {}
     const me = S.profiles.find(p => p.id === L.uid) || {name:''};
     const roleLabel = me.isAdmin ? 'Quản trị viên' : (ROLES[me.roleKey] || ROLES.custom).label;
-    const mods = [['dash', 'Tổng quan', 'Tiến độ, nhân công, dòng tiền và việc cần xử lý trong ngày', 'edit'], ['chat', 'Chat', 'Nhắn riêng, nhóm dự án, gửi tệp — cả công ty', 'edit']]
+    const mods = [['feed', 'Newsfeed', 'Tin tức, thông báo toàn công ty', 'edit'], ['desk', 'Bàn làm việc', 'Việc của tôi, chấm công, đơn từ, ngày phép', 'edit'], ['cal', 'Lịch', 'Họp và sự kiện toàn công ty', 'edit'], ['chat', 'Chat', 'Nhắn riêng, nhóm dự án, gửi tệp — cả công ty', 'edit']]
       .concat(PERM_MODS.map(([k, l, d]) => [k, l, d, perm(k)])).filter(m => m[3] !== 'none');
     const off = PERM_MODS.filter(([k]) => perm(k) === 'none');
     showModal(`<div class="modal wide welcome"><div class="wl-head"><div><span class="ar-pill dark">${ic('sparkle', 13)} Chào mừng đến Dezon Workspace</span><h3 style="margin-top:12px">Xin chào, ${esc(me.name.split(' ').pop())} 👋</h3>

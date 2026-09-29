@@ -1,0 +1,34 @@
+/* Chat — bổ sung cho class .chat có sẵn trong index.html */
+.cx-av{position:relative;display:inline-flex;flex:0 0 auto}
+.cx-on{position:absolute;right:0;bottom:0;width:10px;height:10px;border-radius:50%;background:var(--green);border:2px solid var(--card)}
+.msg{align-items:flex-start}
+.msg.cont{margin-top:-8px}
+.cx-sp{width:30px;flex:0 0 auto}
+.cx-body{min-width:0;display:flex;flex-direction:column}
+.msg.me .cx-body{align-items:flex-end}
+.cx-time{font-size:10.5px;color:var(--muted);margin-top:3px}
+.msg .bubble a{color:inherit;text-decoration:underline;word-break:break-all}
+.msg .bubble mark,.botmsg mark{background:var(--yellow-t);color:inherit;border-radius:3px;outline:1px solid var(--yellow)}
+.msg .file{max-width:320px}
+.cx-find{display:flex;align-items:center;gap:8px;padding:8px 14px;border-bottom:1px solid var(--line)}
+.cx-comp{flex-wrap:wrap;align-items:flex-end}
+.cx-comp textarea{flex:1;border:0;outline:0;background:transparent;min-width:60px;resize:none;font:inherit;font-size:13.5px;color:var(--ink);padding:8px 4px;line-height:1.4;max-height:120px;height:36px}
+.cx-comp .icon-btn{font-weight:600}
+.cx-att{flex:1 0 100%;display:flex;align-items:center;gap:10px;padding:6px 8px;border-radius:12px;background:var(--hover);border:1px solid var(--line);min-width:0}
+.cx-att img{width:44px;height:44px;object-fit:cover;border-radius:8px}
+.cx-att b{font-weight:500;font-size:12.5px;display:block}
+.cx-att small{color:var(--muted);font-size:11px}
+.cx-att .icon-btn{margin-left:auto}
+.cx-hero{display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;padding:6px 0 4px}
+.cx-hero b{font-size:15px;font-weight:600}
+.cx-hero small{color:var(--muted);font-size:12px}
+.cx-li{padding:7px 8px;text-align:left}
+.cx-count{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.cx-count span{background:var(--hover);border:1px solid var(--line);border-radius:12px;padding:8px 4px;text-align:center;font-size:11px;color:var(--muted)}
+.cx-count b{display:block;font-size:16px;color:var(--ink);font-weight:600}
+.cx-media{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.cx-media img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:10px;cursor:pointer;background:var(--chip);margin:0;max-height:none}
+.cx-link:hover{border-color:var(--muted)}
+.chat-info .file span{min-width:0}
+/* lớp .me toàn cục (avatar) không được áp vào tin nhắn của mình */
+.msg.me{width:auto;height:auto;border-radius:0;display:flex;background:none;color:inherit;font-size:inherit;font-weight:inherit;place-items:normal}

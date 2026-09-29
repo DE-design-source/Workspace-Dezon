@@ -1,0 +1,62 @@
+/* Cài đặt — màu chủ đạo, mật độ, vị trí menu */
+
+/* màu chủ đạo: đổi --btn (nút, tab con, chip đang chọn, bong bóng chat của tôi, toast…) */
+:root[data-accent="blue"]{--btn:#2F5DA8;--btn-ink:#fff}
+:root[data-accent="purple"]{--btn:#6D4FC2;--btn-ink:#fff}
+:root[data-accent="green"]{--btn:#1E8E5A;--btn-ink:#fff}
+:root[data-accent="orange"]{--btn:#B7791F;--btn-ink:#fff}
+:root[data-accent="red"]{--btn:#C0392B;--btn-ink:#fff}
+:root[data-accent="teal"]{--btn:#0E8A82;--btn-ink:#fff}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"])[data-accent="blue"]{--btn:#7AA2E3;--btn-ink:#121315}
+  :root:not([data-theme="light"])[data-accent="purple"]{--btn:#A796E8;--btn-ink:#121315}
+  :root:not([data-theme="light"])[data-accent="green"]{--btn:#4FC585;--btn-ink:#121315}
+  :root:not([data-theme="light"])[data-accent="orange"]{--btn:#E0AC4F;--btn-ink:#121315}
+  :root:not([data-theme="light"])[data-accent="red"]{--btn:#E0685A;--btn-ink:#121315}
+  :root:not([data-theme="light"])[data-accent="teal"]{--btn:#3FC2B6;--btn-ink:#121315}
+}
+:root[data-theme="dark"][data-accent="blue"]{--btn:#7AA2E3;--btn-ink:#121315}
+:root[data-theme="dark"][data-accent="purple"]{--btn:#A796E8;--btn-ink:#121315}
+:root[data-theme="dark"][data-accent="green"]{--btn:#4FC585;--btn-ink:#121315}
+:root[data-theme="dark"][data-accent="orange"]{--btn:#E0AC4F;--btn-ink:#121315}
+:root[data-theme="dark"][data-accent="red"]{--btn:#E0685A;--btn-ink:#121315}
+:root[data-theme="dark"][data-accent="teal"]{--btn:#3FC2B6;--btn-ink:#121315}
+:root[data-accent] :focus-visible{outline-color:var(--btn)}
+:root[data-accent] .rail-btn.on{color:var(--btn)}
+:root[data-accent] .seg button.on{color:var(--btn)}
+:root[data-accent] .switch input:checked + i{background:var(--btn)}
+:root[data-accent] .theme-card.on{border-color:var(--btn)}
+:root[data-accent] .field input:focus,:root[data-accent] .field select:focus,:root[data-accent] .field textarea:focus{outline-color:var(--btn)}
+
+/* mật độ gọn */
+html[data-density="compact"]{zoom:.88}
+
+/* menu bên phải (chỉ khi menu là cột dọc) */
+@media (min-width:1181px){
+  .frame.sb-right{grid-template-columns:336px minmax(0,1fr) var(--rail-w,78px);padding:0 0 12px 12px}
+  .frame.sb-right .rail{grid-column:3}
+  .frame.sb-right .tabs{grid-column:1/3}
+  .frame.sb-right .ai{grid-column:1}
+  .frame.sb-right.ai-hidden{grid-template-columns:minmax(0,1fr) var(--rail-w,78px)}
+  .frame.sb-right.ai-hidden .rail{grid-column:2}
+  .frame.sb-right.ai-hidden .tabs,.frame.sb-right.ai-hidden .main{grid-column:1}
+}
+@media (min-width:721px) and (max-width:1180px){
+  .frame.sb-right,.frame.sb-right.ai-hidden{grid-template-columns:minmax(0,1fr) var(--rail-w,78px);padding:0 0 12px 12px}
+  .frame.sb-right .rail{grid-column:2}
+  .frame.sb-right .tabs,.frame.sb-right .main{grid-column:1}
+}
+
+/* trang cài đặt */
+.set-hint{background:var(--hover);border-radius:12px;padding:10px 12px}
+.set-swatches{display:flex;flex-wrap:wrap;gap:10px}
+.set-sw{display:flex;flex-direction:column;align-items:center;gap:6px;font-size:11.5px;color:var(--ink-2);width:78px}
+.set-sw i{width:38px;height:38px;border-radius:50%;border:3px solid var(--card);box-shadow:0 0 0 1px var(--line)}
+.set-sw.on i{box-shadow:0 0 0 2px var(--ink)}
+.set-sw.on{color:var(--ink);font-weight:600}
+.set-dens{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+.set-dens .theme-card small{font-weight:400;font-size:11.5px}
+.set-dens-prev{width:100%;height:60px;border-radius:10px;background:var(--chip);display:flex;flex-direction:column;justify-content:center;gap:6px;padding:8px 12px}
+.set-dens-prev i{display:block;height:5px;border-radius:3px;background:var(--muted);opacity:.5}
+.set-dens-prev.compact{gap:3px}
+.set-dens-prev.compact i{height:4px}

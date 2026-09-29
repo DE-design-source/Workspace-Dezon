@@ -84,6 +84,7 @@ const IC = {
   bulb:'<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2V17h5v-1.1c0-.8.4-1.5 1-2A6 6 0 0 0 12 3z"/>',
   clip:'<path d="m21 11-8.5 8.5a5 5 0 0 1-7-7L14 4a3.5 3.5 0 0 1 5 5l-8.5 8.5a2 2 0 0 1-3-3L15 7"/>',
   external:'<path d="M14 4h6v6M20 4l-9 9"/><path d="M18 14v4.5a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 4 18.5v-11A1.5 1.5 0 0 1 5.5 6H10"/>',
+  calendar:'<rect x="3" y="4.5" width="18" height="16.5" rx="3"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4"/>',
   megaphone:'<path d="M3 10v4a1 1 0 0 0 1 1h3l5 4V5L7 9H4a1 1 0 0 0-1 1z"/><path d="M16 8.5a5 5 0 0 1 0 7M19 5.5a9 9 0 0 1 0 13"/>',
   gear:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',
   sidebar:'<rect x="3" y="4" width="18" height="16" rx="3"/><path d="M9 4v16"/>',
@@ -92,17 +93,22 @@ const IC = {
 const ic = (n, s = 18) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[n] || ''}</svg>`;
 
 /* ============ đăng ký module ============ */
-// mods: quyền cần có (một trong số đó) để thấy mục; cur(): quyền áp cho tab đang mở (dải "Chỉ xem").
+// Menu theo source SiteFlow. mods: quyền cần có (một trong số đó) để thấy mục; cur(): quyền áp cho tab đang mở (dải "Chỉ xem").
+// Nhóm 'Menu' = danh sách chính; 'Khác' = nhóm dưới cùng.
 const VIEWS = {
-  dash:{label:'Tổng quan', icon:'grid', group:'Menu'},
+  feed:{label:'Newsfeed', icon:'grid', group:'Menu'},
   mkt:{label:'Marketing', icon:'megaphone', group:'Menu', mods:['mkt']},
   sales:{label:'Kinh doanh', icon:'briefcase', group:'Menu', mods:['sales']},
   chat:{label:'Chat', icon:'chat', group:'Menu'},
   pm:{label:'Quản lý dự án', icon:'gantt', group:'Menu', scoped:true, mods:['projects','pm'], cur:() => ['gantt','quest'].includes(S.sub.pm) ? 'pm' : 'projects'},
-  att:{label:'HR', icon:'userclock', group:'Menu', mods:['att','hr'], cur:() => (S.sub.hr || 'cc') === 'cc' ? 'att' : 'hr'},
-  fin:{label:'Tài chính', icon:'wallet', group:'Menu', scoped:true, mods:['fin']},
+  // HR hiện với mọi người để ai cũng tự chấm công được; tab quản lý tự ẩn theo quyền att / hr.
+  att:{label:'HR', icon:'userclock', group:'Menu', cur:() => (S.sub.hr || 'cc') === 'cc' ? 'att' : 'hr'},
+  fin:{label:'Tài chính', icon:'wallet', group:'Menu', mods:['fin']},
   qs:{label:'QS', icon:'ruler', group:'Menu', mods:['qs']},
   po:{label:'Mua hàng', icon:'cart', group:'Menu', mods:['po']},
+  prod:{label:'Sản xuất', icon:'hardhat', group:'Menu', mods:['prod']},
+  desk:{label:'Bàn làm việc', icon:'target', group:'Khác'},
+  cal:{label:'Lịch', icon:'calendar', group:'Khác'},
   wiki:{label:'Wiki', icon:'book', group:'Khác', mods:['wiki']},
   settings:{label:'Cài đặt', icon:'gear', group:'Khác'}
 };
@@ -127,7 +133,8 @@ const PERM_MODS = [
   ['hr','Hồ sơ & lương','Hồ sơ nhân sự, bảng lương'],
   ['fin','Tài chính','Ngân sách, hoá đơn, công nợ, dòng tiền'],
   ['qs','QS','Bóc tách, báo giá, danh mục sản phẩm'],
-  ['po','Mua hàng','Đơn mua hàng, nhà cung cấp, duyệt đơn'],
+  ['po','Mua hàng','Đơn mua hàng, nhà cung cấp'],
+  ['prod','Sản xuất','Đơn sản xuất, kho vật tư, nhân công, máy móc xưởng'],
   ['wiki','Wiki','Sổ tay, nội quy, quy trình'],
   ['apps','Ứng dụng','QS Pro & các link web nhúng']];
 const perm = mod => LIVE && LIVE.perm ? LIVE.perm(mod) : 'edit';
@@ -137,16 +144,22 @@ function canSee(v){
   const mods = (VIEWS[v] || {}).mods;
   return !mods || mods.some(m => perm(m) !== 'none');
 }
-const viewPerm = v => { const x = VIEWS[v]; return x && x.mods ? perm(x.cur ? x.cur() : x.mods[0]) : 'edit'; };
+const viewPerm = v => { const x = VIEWS[v]; return x && (x.mods || x.cur) ? perm(x.cur ? x.cur() : x.mods[0]) : 'edit'; };
+// Bộ dữ liệu dùng chung, đồng bộ lên Supabase khi đăng nhập (bảng records). Mỗi module tự khai báo:
+//   syncCol(tên, 'array'|'map'|'single', get, set, {read, write, empty})
+//   read/write: 'all' | 'admin' | ['perm', …]  — đọc khi có quyền ≥ xem, ghi khi có quyền sửa ở một trong các module
+//   empty: () => giá trị trống — dùng cho "Bắt đầu trống" và làm nền khi máy chủ chưa có dữ liệu (bỏ trống = giữ dữ liệu mẫu, vd danh mục)
+const SYNC_REG = [];
+function syncCol(name, kind, get, set, opts = {}){ SYNC_REG.push({name, kind, get, set, read:opts.read || 'all', write:opts.write || 'all', empty:opts.empty}); }
 const MOD = {}, AFTER = {}, ACT = {}, FORM = {}, INP = {}, CHG = {}, DROP = {}, DEL = {};
 const SEEDS = [], SEARCH = [], AI = [], AI_CHIPS = [], AI_SUGG = [];
 
 /* ============ trạng thái ============ */
-const KEY = 'siteflow-workspace-v1';
+const KEY = 'dezon-workspace-v2';
 let S;
 const ui = {notif:false, palItems:[]};
 function seed(){
-  const s = {v:1, view:'dash', tabs:['dash','mkt','sales','chat','pm','app-qspro'], apps:JSON.parse(JSON.stringify(DEFAULT_APPS)), pid:'riverside', sub:{}, ai:[], activity:[], seenAct:0, me:'ta',
+  const s = {v:2, view:'feed', tabs:['feed','sales','chat','pm','desk'], apps:JSON.parse(JSON.stringify(DEFAULT_APPS)), pid:'riverside', sub:{}, ai:[], activity:[], seenAct:0, me:'ta',
     people:[
       {id:'ta', name:'Trần Anh', role:'Quản lý dự án', team:'Văn phòng', c:'purple'},
       {id:'da', name:'Nguyễn Đức Anh', role:'Chỉ huy trưởng', team:'Ban chỉ huy', c:'blue'},
@@ -174,7 +187,7 @@ function seed(){
 }
 function load(){
   try { S = JSON.parse(localStorage.getItem(KEY)); } catch (e) { S = null; }
-  if (!S || S.v !== 1) S = seed();
+  if (!S || S.v !== 2) S = seed();
   // dữ liệu demo cũ: bổ sung phần mới (Marketing, HR, Cài đặt…) từ dữ liệu mẫu
   const base = seed();
   Object.keys(base).forEach(k => { if (S[k] === undefined) S[k] = base[k]; });
@@ -182,11 +195,18 @@ function load(){
   if (!S.apps) S.apps = JSON.parse(JSON.stringify(DEFAULT_APPS));
   S.tabs = [...new Set(S.tabs.map(t => t === 'projects' ? 'pm' : t))].filter(vinfo);
 }
+syncCol('people', 'array', () => S.people, v => S.people = v, {read:'all', write:['att','hr','projects','pm','prod'], empty:() => []});
+syncCol('activity', 'single', () => ({list:S.activity}), v => S.activity = v.list || [], {read:'all', write:'all', empty:() => ({list:[]})});
+syncCol('apps', 'single', () => ({list:S.apps}), v => S.apps = v.list || [], {read:'all', write:['apps']});
 function save(){
   if (LIVE){ LIVE.saveUi(); LIVE.sync(); return; }
   try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {}
 }
 function log(text, c = 'purple'){ S.activity.unshift({t:Date.now(), text, c}); S.activity = S.activity.slice(0, 40); }
+// Mã người = mã có sẵn (ta, da, lv…) hoặc slug họ tên không dấu (vd 'do-thao-vy'). Module thêm người vào danh bạ trong SEEDS: ensurePeople(s, [...]).
+const slug = t => String(t).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+function ensurePeople(s, list){ list.forEach(p => { if (!s.people.some(x => x.id === p.id || x.name === p.name)) s.people.push(p); }); }
+const personByName = name => allPeople().find(p => p.name === name);
 const allPeople = () => (S.profiles || []).concat(S.people || []);
 const person = id => allPeople().find(p => p.id === id) || {id, name:id ? 'Không rõ' : '—', role:'', team:'', c:'gray'};
 const initials = name => { const w = String(name).trim().split(/\s+/); return (w.length > 1 ? w[w.length - 2][0] + w[w.length - 1][0] : w[0].slice(0, 2)).toUpperCase(); };
@@ -306,14 +326,14 @@ function renderTop(){
     <div class="crumb"><span class="ws">${a ? 'Ứng dụng' : 'Dezon'}</span>${scoped}<span class="ws">${ic('chev', 13)}</span><b>${ic(v.icon, 16)}${esc(v.label)}</b>${a ? `<span class="ws small ell" style="max-width:260px">${esc(a.url.replace(/^https?:\/\//, '').replace(/\/$/, ''))}</span>` : ''}</div>
     <div class="top-actions">${appBtns}
       <button class="icon-btn" data-act="palette" aria-label="Tìm nhanh" title="Tìm nhanh (Ctrl K)">${ic('search')}</button>
-      <button class="icon-btn" data-act="nav" data-v="chat" aria-label="Chat" title="Chat">${ic('chat')}${chatUnreadTotal() ? '<span class="badge"></span>' : ''}</button>
+      <button class="icon-btn" data-act="nav" data-v="chat" aria-label="Chat" title="Chat">${ic('chat')}${typeof chatUnreadTotal === 'function' && chatUnreadTotal() ? '<span class="badge"></span>' : ''}</button>
       <button class="icon-btn" data-act="notif" aria-label="Hoạt động gần đây" title="Hoạt động gần đây">${ic('bell')}${newAct ? '<span class="badge"></span>' : ''}</button>
       <button class="icon-btn" data-act="ai-toggle" aria-label="Trợ lý" title="Bật / tắt trợ lý">${ic('sparkle')}</button>
       ${ui.notif ? `<div class="pop"><h4>Hoạt động gần đây</h4>${S.activity.slice(0, 10).map(a => `<div class="act" style="--c:${cv(a.c || 'purple')}"><i></i><div>${esc(a.text)}<small>${ago(a.t)}</small></div></div>`).join('') || '<div class="empty">Chưa có hoạt động</div>'}</div>` : ''}
     </div>`;
 }
 function render(){
-  if (!vinfo(S.view) || !canSee(S.view) || (!isApp(S.view) && !MOD[S.view])) S.view = 'dash';
+  if (!vinfo(S.view) || !canSee(S.view) || (!isApp(S.view) && !MOD[S.view])) S.view = 'feed';
   renderTop();
   showApps();
   if (isApp(S.view)){ renderRail(); renderTabs(); save(); return; }
@@ -321,7 +341,7 @@ function render(){
   const ro = LIVE && viewPerm(S.view) === 'view'
     ? `<div class="ro-banner">${ic('info', 15)}<span><b>Chỉ xem</b> — bạn được xem ${esc(VIEWS[S.view].label)} nhưng chưa có quyền sửa. Thay đổi sẽ không được lưu. Cần sửa? Liên hệ quản trị viên.</span></div>` : '';
   try { $('#view').innerHTML = ro + MOD[S.view](); }
-  catch (e){ console.error(e); $('#view').innerHTML = `<div class="card pad empty">Không hiển thị được trang này (${esc(e.message)}). <button class="btn sm" data-act="nav" data-v="dash">Về Tổng quan</button></div>`; }
+  catch (e){ console.error(e); $('#view').innerHTML = `<div class="card pad empty">Không hiển thị được trang này (${esc(e.message)}). <button class="btn sm" data-act="nav" data-v="feed">Về Newsfeed</button></div>`; }
   if (keep){ const el = document.getElementById(keep.id); if (el){ el.value = keep.v; el.focus(); try { el.setSelectionRange(keep.a, keep.b); } catch (e) {} } }
   renderRail(); renderTabs(); renderTop();
   if (AFTER[S.view]) try { AFTER[S.view](); } catch (e) { console.error(e); }
@@ -331,6 +351,7 @@ function nav(v, subKey){
   // tên cũ: Dự án → tab của Quản lý dự án; Tài khoản → Cài đặt
   if (v === 'projects'){ S.sub.pm = subKey || (['list','setup','detail'].includes(S.sub.pm) ? S.sub.pm : 'list'); v = 'pm'; subKey = null; }
   if (v === 'admin'){ v = 'settings'; subKey = 'members'; }
+  if (v === 'dash') v = 'feed';
   if (!canSee(v)){ toast('Bạn chưa được cấp quyền dùng mục này'); return; }
   if (subKey) S.sub[v] = subKey;
   S.view = v; if (!S.tabs.includes(v)) S.tabs.push(v);
@@ -516,7 +537,7 @@ FORM.app = (v, f) => {
   if (a) Object.assign(a, data); else { a = {id:uid(), ...data}; S.apps.push(a); }
   closeModal(); log('Ứng dụng: ' + a.name, 'blue'); nav('app-' + a.id); toast('Đã lưu ứng dụng ' + a.name);
 };
-DEL.app = id => { S.apps = S.apps.filter(a => a.id !== id); S.tabs = S.tabs.filter(t => t !== 'app-' + id); if (S.view === 'app-' + id) S.view = 'dash'; };
+DEL.app = id => { S.apps = S.apps.filter(a => a.id !== id); S.tabs = S.tabs.filter(t => t !== 'app-' + id); if (S.view === 'app-' + id) S.view = 'feed'; };
 
 /* ============ khởi động ============ */
 function boot(){

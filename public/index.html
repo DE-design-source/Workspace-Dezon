@@ -71,7 +71,7 @@ input,select,textarea{font:inherit;color:inherit}
 .rail-btn.on{background:var(--card);color:var(--ink);box-shadow:var(--shadow)}
 .rail-btn .badge{position:absolute;top:6px;right:6px;width:8px;height:8px;border-radius:50%;background:var(--orange);border:2px solid var(--shell)}
 .rail .spacer{flex:1;min-height:12px}
-.me{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:600;color:#fff;background:var(--purple);flex:0 0 auto}
+.rail .me,.rail-me .me{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:600;color:#fff;background:var(--purple);flex:0 0 auto}
 
 .tabs{grid-column:2/4;display:flex;align-items:center;gap:6px;padding-top:6px;overflow-x:auto;scrollbar-width:none}
 .tabs::-webkit-scrollbar{display:none}
@@ -747,6 +747,20 @@ table.matrix th.c,table.matrix td.c{text-align:center}
 @media (max-width:1000px){ .quote-layout,.set-layout{grid-template-columns:minmax(0,1fr)} .set-nav{position:static;flex-direction:row;overflow-x:auto} .set-nav button{white-space:nowrap} .theme-cards{grid-template-columns:minmax(0,1fr)} }
 @media (max-width:720px){ .frame.rail-open .rl,.rail .rl{display:none} .rail-top,.rail-sep,.rail-me{display:none} .frame.rail-open .rail{padding:8px 12px calc(8px + env(safe-area-inset-bottom,0px))} .frame.rail-open .rail-btn{width:38px;padding:0;justify-content:center} }
 </style>
+<link rel="stylesheet" href="css/feed.css?v=10">
+<link rel="stylesheet" href="css/desk.css?v=10">
+<link rel="stylesheet" href="css/cal.css?v=10">
+<link rel="stylesheet" href="css/sales.css?v=10">
+<link rel="stylesheet" href="css/mkt.css?v=10">
+<link rel="stylesheet" href="css/pm.css?v=10">
+<link rel="stylesheet" href="css/hr.css?v=10">
+<link rel="stylesheet" href="css/settings.css?v=10">
+<link rel="stylesheet" href="css/wiki.css?v=10">
+<link rel="stylesheet" href="css/fin.css?v=10">
+<link rel="stylesheet" href="css/qs.css?v=10">
+<link rel="stylesheet" href="css/po.css?v=10">
+<link rel="stylesheet" href="css/prod.css?v=10">
+<link rel="stylesheet" href="css/chat.css?v=10">
 </head>
 <body>
 <div class="frame" id="frame">
@@ -777,12 +791,23 @@ table.matrix th.c,table.matrix td.c{text-align:center}
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.0/dist/umd/supabase.js"></script>
 <script src="/config.js"></script>
-<script src="js/core.js?v=8"></script>
-<script src="js/mod-sales.js?v=8"></script>
-<script src="js/mod-ops.js?v=8"></script>
-<script src="js/mod-money.js?v=8"></script>
-<script src="js/mod-more.js?v=8"></script>
-<script src="js/live.js?v=8"></script>
+<script src="js/core.js?v=10"></script>
+<script src="js/mod-quest.js?v=10"></script>
+<script src="js/mod-chat.js?v=10"></script>
+<script src="js/mod-feed.js?v=10"></script>
+<script src="js/mod-desk.js?v=10"></script>
+<script src="js/mod-cal.js?v=10"></script>
+<script src="js/mod-sales.js?v=10"></script>
+<script src="js/mod-mkt.js?v=10"></script>
+<script src="js/mod-pm.js?v=10"></script>
+<script src="js/mod-hr.js?v=10"></script>
+<script src="js/mod-settings.js?v=10"></script>
+<script src="js/mod-wiki.js?v=10"></script>
+<script src="js/mod-fin.js?v=10"></script>
+<script src="js/mod-qs.js?v=10"></script>
+<script src="js/mod-po.js?v=10"></script>
+<script src="js/mod-prod.js?v=10"></script>
+<script src="js/live.js?v=10"></script>
 <script>boot();</script>
 </body>
 </html>

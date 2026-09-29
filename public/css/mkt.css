@@ -1,0 +1,39 @@
+/* Marketing */
+.mkt-tabbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.mkt-tabbar .seg{align-items:center}
+.mkt-tabbar.editing .seg{outline:1.5px dashed var(--pink);outline-offset:2px}
+.mkt-x{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;margin-left:2px;color:var(--muted);font-size:14px;line-height:1}
+.mkt-x:hover{background:var(--red-t);color:var(--red)}
+.mkt-plus{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;color:var(--ink-2)}
+.mkt-plus:hover{background:var(--card);color:var(--ink)}
+.mkt-tab-inp input{height:32px;width:170px;border:1px solid var(--pink);border-radius:999px;padding:0 12px;background:var(--card);color:var(--ink);font-size:12.5px}
+.mkt-cat{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:12px;align-items:start}
+.mkt-group{overflow:hidden}
+.mkt-group-h{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--line)}
+.mkt-group table{min-width:380px}
+.mkt-add-row{width:100%;display:flex;align-items:center;gap:6px;padding:11px 14px;border-top:1px solid var(--line);font-size:12.5px;color:var(--muted)}
+.mkt-add-row:hover{background:var(--hover);color:var(--ink)}
+.mkw-list{max-height:52vh;overflow:auto}
+/* giấy báo giá */
+.mkt-doc .mkt-doc-sub{color:#666;font-size:12px}
+.mkt-doc .mkt-doc-note{color:#555;font-size:12px;margin:16px 0 0}
+.mkt-doc .min-line small{display:block;color:#888;font-size:11.5px}
+.mkt-doc .sign{grid-template-columns:repeat(2,minmax(0,1fr))}
+.mkt-totals{display:flex;flex-direction:column;gap:6px;margin:16px 0 0 auto;max-width:340px;font-size:13px}
+.mkt-totals div{display:flex;justify-content:space-between;gap:24px}
+.mkt-totals .grand{font-size:16px;border-top:2px solid #1b1d20;padding-top:8px}
+.mkt-modern .doc-head{border-bottom-color:#d6337f}
+.mkt-modern-t{font-size:22px;letter-spacing:.08em;color:#d6337f}
+.mkt-modern .mkt-totals .grand{background:#d6337f;color:#fff;border:0;border-radius:10px;padding:10px 12px}
+.mkt-cells{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px;margin:16px 0}
+.mkt-cells div{background:#f6f6f4;border-radius:10px;padding:10px 12px}
+.mkt-cells small{display:block;color:#888;font-size:11px;margin-bottom:2px}
+.mkt-classic{font-family:Georgia,'Times New Roman',serif}
+.mkt-minimal{padding:40px 44px}
+.mkt-min-title{font-size:26px;font-weight:600;margin:6px 0 4px;letter-spacing:-.01em}
+.mkt-min-g{margin:20px 0 4px;font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:#555}
+.mkt-sec{margin:20px 0 8px;font-weight:700;font-size:12.5px;text-transform:uppercase;letter-spacing:.06em;color:#2f5da8;border-bottom:1px solid #dbe4f3;padding-bottom:4px}
+.mkt-dg{margin-bottom:10px}
+.mkt-dg-h{display:flex;justify-content:space-between;background:#f2f5fa;border-radius:8px;padding:7px 10px;font-weight:600;font-size:12.5px}
+.mkt-terms{margin:0;padding-left:18px;color:#444;font-size:12.5px;line-height:1.7}
+@media print{ .mkt-doc{box-shadow:none;border:0} }
