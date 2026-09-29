@@ -751,6 +751,21 @@ body{padding:0}
 .frame{border-radius:0;grid-template-rows:minmax(0,1fr);padding:12px 12px 12px 0}
 .tabs{display:none}
 .rail,.main,.ai{grid-row:1}
+/* Dezbot: nút tròn nổi góc phải dưới + khung chat bật lên */
+.frame,.frame.ai-hidden{grid-template-columns:var(--rail-w) minmax(0,1fr)}
+.frame.ai-hidden .ai{display:flex}
+.ai{position:fixed;grid-column:auto;right:24px;bottom:96px;top:auto;left:auto;width:min(400px,calc(100vw - 32px));height:min(640px,calc(100dvh - 128px));z-index:45;border:1px solid var(--line);border-radius:24px;box-shadow:0 24px 70px rgba(0,0,0,.28);transform:translateY(16px) scale(.97);transform-origin:bottom right;opacity:0;pointer-events:none;transition:transform .18s ease,opacity .18s ease}
+.frame.ai-open .ai{transform:none;opacity:1;pointer-events:auto}
+.frame.ai-open ~ .scrim{opacity:0;pointer-events:none}
+.ai-close{display:grid}
+.ai-fab{position:fixed;right:24px;bottom:24px;z-index:46;width:58px;height:58px;border-radius:50%;display:grid;place-items:center;color:#fff;background:#094bf4;box-shadow:0 10px 28px rgba(9,75,244,.4);transition:transform .15s}
+.ai-fab:hover{transform:scale(1.06)}
+.ai-fab .i-close,.frame.ai-open ~ .ai-fab .i-open{display:none}
+.frame.ai-open ~ .ai-fab .i-close{display:block}
+@media (max-width:720px){
+  .ai-fab{bottom:calc(76px + env(safe-area-inset-bottom,0px));right:16px;width:52px;height:52px}
+  .ai{right:0;left:0;bottom:0;top:0;width:100%;height:100%;border-radius:0}
+}
 </style>
 <link rel="stylesheet" href="css/feed.css?v=10">
 <link rel="stylesheet" href="css/desk.css?v=10">
@@ -791,6 +806,7 @@ body{padding:0}
   </aside>
 </div>
 <div class="scrim" id="scrim" data-act="ai-toggle"></div>
+<button class="ai-fab" data-act="ai-toggle" aria-label="Mở Dezbot" title="Dezbot — trợ lý"><svg class="i-open" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 3v4M17 5h4"/></svg><svg class="i-close" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
 <div class="modal-wrap" id="modal" hidden></div>
 <div class="toast" id="toast" role="status" hidden></div>
 

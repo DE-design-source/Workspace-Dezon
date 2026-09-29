@@ -424,9 +424,9 @@ Object.assign(ACT, {
   pal:(el, d) => { const it = ui.palItems[+d.i]; closeModal(); it && it.run(); },
   notif:() => { ui.notif = !ui.notif; if (ui.notif) S.seenAct = S.activity.length; renderTop(); save(); },
   'ai-toggle':() => {
-    const f = $('#frame');
-    if (innerWidth <= 1180){ f.classList.toggle('ai-open'); if (f.classList.contains('ai-open')) setTimeout(() => $('#aiQ').focus(), 250); }
-    else { f.classList.toggle('ai-hidden'); try { localStorage.setItem('sf-ai-hidden', f.classList.contains('ai-hidden') ? '1' : ''); } catch (e) {} }
+    // Dezbot là khung nổi ở góc phải dưới: bấm nút tròn để mở / đóng.
+    const f = $('#frame'); f.classList.toggle('ai-open');
+    if (f.classList.contains('ai-open')) setTimeout(() => $('#aiQ').focus(), 200);
   },
   'ai-clear':() => { S.ai = []; renderAi(); save(); },
   'ai-ask':(el, d) => aiAsk(d.q),
