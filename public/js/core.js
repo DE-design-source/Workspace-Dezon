@@ -550,13 +550,56 @@ function renderAppMode(){
   f.classList.toggle('app-mode', !!a);
   if (!a){ f.classList.remove('rail-drawer'); bar.hidden = true; return; }
   bar.hidden = false;
-  bar.innerHTML = `<button class="ab-logo" data-act="app-menu" aria-label="Mở menu Dezon Workspace" title="Menu"><img src="/img/logo.png" alt="" width="40" height="40"></button>
+  abApply(); abBind();
+  bar.innerHTML = `<button class="ab-logo" data-act="app-menu" aria-label="Mở menu Dezon Workspace — kéo để di chuyển" title="Menu · kéo để di chuyển"><img src="/img/logo.png" alt="" width="40" height="40" draggable="false"></button>
     <div class="ab-more"><span class="ab-name">${ic(a.icon, 15)}<b>${esc(a.name)}</b></span>
       <button class="icon-btn sm" data-act="app-reload" title="Tải lại" aria-label="Tải lại ${esc(a.name)}">${ic('reset', 15)}</button>
       <a class="icon-btn sm" href="${esc(a.url)}" target="_blank" rel="noopener" title="Mở trong trình duyệt" aria-label="Mở trong trình duyệt">${ic('external', 15)}</a>
       <button class="icon-btn sm" data-act="app-exit" title="Thoát về Workspace" aria-label="Thoát về Workspace">${ic('x', 15)}</button></div>`;
 }
-ACT['app-menu'] = () => $('#frame').classList.toggle('rail-drawer');
+ACT['app-menu'] = () => { if (ui.abDragged){ ui.abDragged = false; return; } $('#frame').classList.toggle('rail-drawer'); };
+// Nút nổi kéo được: thả ra tự hít vào mép trái/phải gần nhất, nhớ vị trí (localStorage sf-appbar).
+const abPos = () => { try { return JSON.parse(localStorage.getItem('sf-appbar')) || {side:'left', y:14}; } catch (e) { return {side:'left', y:14}; } };
+function abApply(){
+  const p = abPos(), bar = $('#appbar');
+  bar.classList.toggle('right', p.side === 'right');
+  bar.style.top = clamp(p.y, 10, Math.max(10, innerHeight - 64)) + 'px';
+  bar.style.left = p.side === 'left' ? '14px' : 'auto';
+  bar.style.right = p.side === 'right' ? '14px' : 'auto';
+}
+function abBind(){
+  const bar = $('#appbar'); if (bar.dataset.bound) return; bar.dataset.bound = '1';
+  let st = null;
+  bar.addEventListener('pointerdown', e => {
+    if (e.button !== 0 || e.target.closest('.ab-more')) return;      // nút thao tác vẫn bấm bình thường
+    const r = bar.getBoundingClientRect();
+    st = {x:e.clientX, y:e.clientY, dx:e.clientX - r.left, dy:e.clientY - r.top, moved:false};
+    document.body.classList.add('ab-dragging');                     // chặn iframe nuốt sự kiện chuột ngay từ lúc nhấn
+    try { bar.setPointerCapture(e.pointerId); } catch (err) {}
+  });
+  bar.addEventListener('pointermove', e => {
+    if (!st) return;
+    if (!st.moved && Math.hypot(e.clientX - st.x, e.clientY - st.y) < 5) return;
+    if (!st.moved){ st.moved = true; bar.classList.add('dragging'); }
+    bar.style.right = 'auto';
+    bar.style.left = clamp(e.clientX - st.dx, 6, innerWidth - bar.offsetWidth - 6) + 'px';
+    bar.style.top = clamp(e.clientY - st.dy, 6, innerHeight - bar.offsetHeight - 6) + 'px';
+  });
+  const end = () => {
+    if (!st) return;
+    if (st.moved){
+      const r = bar.getBoundingClientRect();
+      try { localStorage.setItem('sf-appbar', JSON.stringify({side:r.left + r.width / 2 > innerWidth / 2 ? 'right' : 'left', y:Math.round(r.top)})); } catch (e) {}
+      ui.abDragged = true; setTimeout(() => ui.abDragged = false, 0);
+      bar.classList.remove('dragging');
+      abApply();
+    }
+    document.body.classList.remove('ab-dragging');
+    st = null;
+  };
+  bar.addEventListener('pointerup', end); bar.addEventListener('pointercancel', end);
+  addEventListener('resize', () => { if (!bar.hidden) abApply(); });
+}
 ACT['app-exit'] = () => nav(ui.prevView && !isApp(ui.prevView) ? ui.prevView : 'feed');
 
 /* ============ khởi động ============ */

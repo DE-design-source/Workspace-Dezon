@@ -800,6 +800,28 @@ body{padding:0}
   .frame.rail-drawer .rail .rail-btn{width:100%}
 }
 @media (prefers-reduced-motion: reduce){.frame.app-mode.rail-drawer .rail{animation:none}}
+/* Nút ứng dụng nổi — kính mờ tối, kéo thả được */
+.appbar,.appbar:hover,.appbar:focus-within{top:14px;left:14px;gap:2px;padding:5px;border-radius:999px;color:#f4f5f7;
+  background:rgba(16,17,20,.62);-webkit-backdrop-filter:blur(18px) saturate(1.5);backdrop-filter:blur(18px) saturate(1.5);
+  border:1px solid rgba(255,255,255,.1);box-shadow:0 14px 40px rgba(0,0,0,.32),inset 0 1px 0 rgba(255,255,255,.06);
+  touch-action:none;user-select:none;cursor:grab;transition:left .28s cubic-bezier(.2,.8,.2,1),right .28s cubic-bezier(.2,.8,.2,1),top .28s cubic-bezier(.2,.8,.2,1),box-shadow .2s}
+.appbar.right{flex-direction:row-reverse}
+.appbar.dragging{cursor:grabbing;transition:none;box-shadow:0 22px 60px rgba(0,0,0,.45),0 0 0 1px rgba(255,255,255,.14)}
+.appbar.dragging .ab-logo{transform:scale(1.08)}
+.ab-logo{width:40px;height:40px;border-radius:50%;box-shadow:0 0 0 2px rgba(255,255,255,.14),0 6px 16px rgba(0,0,0,.35);opacity:1;cursor:inherit}
+.ab-logo:hover{transform:scale(1.04)}
+.ab-logo img{pointer-events:none}
+.ab-more{gap:2px}
+.ab-name{color:#fff;font:600 13px "Inter Tight",var(--font);letter-spacing:.01em;padding:0 6px 0 10px}
+.appbar.right .ab-name{padding:0 10px 0 6px}
+.ab-name svg{opacity:.7}
+.appbar .icon-btn{color:rgba(255,255,255,.72);border-radius:50%;width:32px;height:32px}
+.appbar .icon-btn:hover{color:#fff;background:rgba(255,255,255,.12)}
+.appbar .icon-btn[data-act="app-exit"]:hover{background:rgba(224,82,74,.85)}
+.appbar:hover .ab-more,.appbar:focus-within .ab-more{max-width:320px;opacity:1}
+.appbar.dragging .ab-more{max-width:0;opacity:0}
+.ab-dragging iframe{pointer-events:none}
+.ab-dragging{cursor:grabbing;user-select:none}
 </style>
 <link rel="stylesheet" href="css/feed.css?v=10">
 <link rel="stylesheet" href="css/desk.css?v=10">
@@ -848,7 +870,7 @@ body{padding:0}
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.0/dist/umd/supabase.js"></script>
 <script src="/config.js"></script>
-<script src="js/core.js?v=11"></script>
+<script src="js/core.js?v=12"></script>
 <script src="js/mod-quest.js?v=10"></script>
 <script src="js/mod-chat.js?v=10"></script>
 <script src="js/mod-feed.js?v=10"></script>
