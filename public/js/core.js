@@ -575,9 +575,8 @@ function abBind(){
     const r = bar.getBoundingClientRect();
     st = {x:e.clientX, y:e.clientY, dx:e.clientX - r.left, dy:e.clientY - r.top, moved:false};
     document.body.classList.add('ab-dragging');                     // chặn iframe nuốt sự kiện chuột ngay từ lúc nhấn
-    try { bar.setPointerCapture(e.pointerId); } catch (err) {}
   });
-  bar.addEventListener('pointermove', e => {
+  window.addEventListener('pointermove', e => {                     // nghe ở window: chuột rời nút vẫn kéo tiếp, khỏi cần capture
     if (!st) return;
     if (!st.moved && Math.hypot(e.clientX - st.x, e.clientY - st.y) < 5) return;
     if (!st.moved){ st.moved = true; bar.classList.add('dragging'); }
@@ -597,7 +596,7 @@ function abBind(){
     document.body.classList.remove('ab-dragging');
     st = null;
   };
-  bar.addEventListener('pointerup', end); bar.addEventListener('pointercancel', end);
+  window.addEventListener('pointerup', end); window.addEventListener('pointercancel', end);
   addEventListener('resize', () => { if (!bar.hidden) abApply(); });
 }
 ACT['app-exit'] = () => nav(ui.prevView && !isApp(ui.prevView) ? ui.prevView : 'feed');
