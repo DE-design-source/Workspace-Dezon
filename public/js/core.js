@@ -336,6 +336,7 @@ function render(){
   if (!vinfo(S.view) || !canSee(S.view) || (!isApp(S.view) && !MOD[S.view])) S.view = 'feed';
   renderTop();
   showApps();
+  renderAppMode();
   if (isApp(S.view)){ renderRail(); renderTabs(); save(); return; }
   const ae = document.activeElement, keep = ae && ae.id && /^(INPUT|TEXTAREA)$/.test(ae.tagName) && $('#view').contains(ae) ? {id:ae.id, v:ae.value, a:ae.selectionStart, b:ae.selectionEnd} : null;
   const ro = LIVE && viewPerm(S.view) === 'view'
@@ -348,6 +349,8 @@ function render(){
   save();
 }
 function nav(v, subKey){
+  if (!isApp(S.view)) ui.prevView = S.view;          // để nút "Thoát" của ứng dụng quay về đúng trang
+  $('#frame').classList.remove('rail-drawer');
   // tên cũ: Dự án → tab của Quản lý dự án; Tài khoản → Cài đặt
   if (v === 'projects'){ S.sub.pm = subKey || (['list','setup','detail'].includes(S.sub.pm) ? S.sub.pm : 'list'); v = 'pm'; subKey = null; }
   if (v === 'admin'){ v = 'settings'; subKey = 'members'; }
@@ -470,6 +473,7 @@ document.addEventListener('change', e => { const n = e.target.dataset && e.targe
 CHG.pid = el => { S.pid = el.value; render(); };
 document.addEventListener('keydown', e => {
   if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k'){ e.preventDefault(); openPalette(); return; }
+  if (e.key === 'Escape' && $('#frame').classList.contains('rail-drawer')){ $('#frame').classList.remove('rail-drawer'); return; }
   if (e.key === 'Escape'){
     if (!$('#modal').hidden) closeModal();
     else if (ui.notif){ ui.notif = false; renderTop(); }
@@ -538,6 +542,22 @@ FORM.app = (v, f) => {
   closeModal(); log('Ứng dụng: ' + a.name, 'blue'); nav('app-' + a.id); toast('Đã lưu ứng dụng ' + a.name);
 };
 DEL.app = id => { S.apps = S.apps.filter(a => a.id !== id); S.tabs = S.tabs.filter(t => t !== 'app-' + id); if (S.view === 'app-' + id) S.view = 'feed'; };
+
+/* ============ chế độ tập trung khi mở ứng dụng nhúng ============ */
+// Ứng dụng tràn toàn màn hình; menu thu về nút logo góc trái trên (rê chuột hiện thao tác, bấm mở menu trượt).
+function renderAppMode(){
+  const a = isApp(S.view) ? appOf(S.view) : null, f = $('#frame'), bar = $('#appbar');
+  f.classList.toggle('app-mode', !!a);
+  if (!a){ f.classList.remove('rail-drawer'); bar.hidden = true; return; }
+  bar.hidden = false;
+  bar.innerHTML = `<button class="ab-logo" data-act="app-menu" aria-label="Mở menu Dezon Workspace" title="Menu"><img src="/img/logo.png" alt="" width="40" height="40"></button>
+    <div class="ab-more"><span class="ab-name">${ic(a.icon, 15)}<b>${esc(a.name)}</b></span>
+      <button class="icon-btn sm" data-act="app-reload" title="Tải lại" aria-label="Tải lại ${esc(a.name)}">${ic('reset', 15)}</button>
+      <a class="icon-btn sm" href="${esc(a.url)}" target="_blank" rel="noopener" title="Mở trong trình duyệt" aria-label="Mở trong trình duyệt">${ic('external', 15)}</a>
+      <button class="icon-btn sm" data-act="app-exit" title="Thoát về Workspace" aria-label="Thoát về Workspace">${ic('x', 15)}</button></div>`;
+}
+ACT['app-menu'] = () => $('#frame').classList.toggle('rail-drawer');
+ACT['app-exit'] = () => nav(ui.prevView && !isApp(ui.prevView) ? ui.prevView : 'feed');
 
 /* ============ khởi động ============ */
 function boot(){

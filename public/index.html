@@ -766,6 +766,40 @@ body{padding:0}
   .ai-fab{bottom:calc(76px + env(safe-area-inset-bottom,0px));right:16px;width:52px;height:52px}
   .ai{right:0;left:0;bottom:0;top:0;width:100%;height:100%;border-radius:0}
 }
+/* Chế độ tập trung: ứng dụng nhúng tràn màn hình, menu thành nút logo góc trái trên */
+.frame.app-mode{grid-template-columns:minmax(0,1fr);padding:0}
+.frame.app-mode .rail{display:none}
+.frame.app-mode .main{grid-column:1;border-radius:0;padding:0}
+.frame.app-mode .topbar{display:none}
+.frame.app-mode .apps{margin-top:0}
+.frame.app-mode .app-frame{border:0;border-radius:0;min-height:100dvh}
+.frame.app-mode ~ .ai-fab{display:none}
+.appbar{position:fixed;top:12px;left:12px;z-index:55;display:flex;align-items:center;gap:4px;padding:4px;border-radius:16px;background:transparent;transition:background .18s,box-shadow .18s}
+.ab-logo{width:40px;height:40px;border-radius:12px;overflow:hidden;display:block;box-shadow:0 6px 18px rgba(0,0,0,.25);opacity:.9;transition:opacity .15s,transform .15s}
+.ab-logo img{display:block;width:100%;height:100%}
+.ab-logo:hover{opacity:1;transform:scale(1.05)}
+.ab-more{display:flex;align-items:center;gap:2px;max-width:0;overflow:hidden;opacity:0;transition:max-width .22s ease,opacity .18s}
+.ab-name{display:flex;align-items:center;gap:6px;padding:0 8px;font-size:13px;white-space:nowrap}
+.appbar:hover,.appbar:focus-within{background:var(--card);box-shadow:0 10px 30px rgba(0,0,0,.18)}
+.appbar:hover .ab-more,.appbar:focus-within .ab-more{max-width:320px;opacity:1}
+.frame.app-mode.rail-drawer .rail{display:flex;position:fixed;left:0;top:0;bottom:0;width:236px;z-index:60;background:var(--shell);box-shadow:12px 0 40px rgba(0,0,0,.25);align-items:stretch;padding:18px 12px 14px;animation:drawerIn .2s ease}
+.frame.rail-drawer .rl{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.frame.rail-drawer .rail-label{padding-left:10px}
+.frame.rail-drawer .rail-sep{width:100%}
+.frame.rail-drawer .rail-btn{width:100%;display:flex;align-items:center;justify-content:flex-start;gap:11px;padding:0 11px;font-size:13px;font-weight:500}
+.frame.rail-drawer .rail-btn .badge{position:static;margin-left:auto;border:0}
+.frame.rail-drawer .rail-me{padding:6px;background:var(--card)}
+.drawer-scrim{position:fixed;inset:0;z-index:58;background:rgba(12,13,15,.35);opacity:0;pointer-events:none;transition:opacity .2s}
+.frame.rail-drawer ~ .drawer-scrim{opacity:1;pointer-events:auto}
+@keyframes drawerIn{from{transform:translateX(-100%)}to{transform:none}}
+@media (max-width:720px){
+  .frame.app-mode .main{padding:0}
+  .frame.app-mode.rail-drawer .rail{flex-direction:column;justify-content:flex-start;right:auto;border-top:0;overflow-y:auto}
+  .frame.rail-drawer .rail .rail-top,.frame.rail-drawer .rail .rail-label,.frame.rail-drawer .rail .rail-sep,.frame.rail-drawer .rail .rail-me,.frame.rail-drawer .rail .extra{display:flex}
+  .frame.rail-drawer .rail .rl{display:block}
+  .frame.rail-drawer .rail .rail-btn{width:100%}
+}
+@media (prefers-reduced-motion: reduce){.frame.app-mode.rail-drawer .rail{animation:none}}
 </style>
 <link rel="stylesheet" href="css/feed.css?v=10">
 <link rel="stylesheet" href="css/desk.css?v=10">
@@ -806,13 +840,15 @@ body{padding:0}
   </aside>
 </div>
 <div class="scrim" id="scrim" data-act="ai-toggle"></div>
+<div class="drawer-scrim" data-act="app-menu"></div>
+<div class="appbar" id="appbar" hidden></div>
 <button class="ai-fab" data-act="ai-toggle" aria-label="Mở Dezbot" title="Dezbot — trợ lý"><svg class="i-open" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 3v4M17 5h4"/></svg><svg class="i-close" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
 <div class="modal-wrap" id="modal" hidden></div>
 <div class="toast" id="toast" role="status" hidden></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.0/dist/umd/supabase.js"></script>
 <script src="/config.js"></script>
-<script src="js/core.js?v=10"></script>
+<script src="js/core.js?v=11"></script>
 <script src="js/mod-quest.js?v=10"></script>
 <script src="js/mod-chat.js?v=10"></script>
 <script src="js/mod-feed.js?v=10"></script>
